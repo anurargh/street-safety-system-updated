@@ -1,0 +1,433 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+
+#map {
+    height: 100vh;
+    width: 100%;
+}
+
+#crimeReportForm {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    width: 90%;
+    max-width: 400px;
+}
+
+#crimeReportForm h3 {
+    margin-top: 0;
+    color: #333;
+}
+
+#crimeReportForm label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #555;
+}
+
+#crimeReportForm input[type="text"],
+#crimeReportForm textarea {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+#crimeReportForm select#crime-type {
+    width: 100%; /* Simplified width calculation */
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    background-color: white;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none; /* Fixed typo from '-moz-apnet pearance' */
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007bff%22%20d%3D%22M287%2C114.7L159.2%2C242.5c-5.8%2C5.8-15.2%2C5.8-21%2C0L5.4%2C114.7c-5.8-5.8-5.8-15.2%2C0-21l10.5-10.5c5.8-5.8%2C15.2-5.8%2C21%2C0l115.8%2C115.9l115.8-115.9c5.8-5.8%2C15.2-5.8%2C21%2C0l10.5%2C10.5C292.8%2C99.5%2C292.8%2C108.9%2C287%2C114.7z%22%2F%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 10px top 50%;
+    background-size: 12px;
+}
+
+#crimeReportForm textarea {
+    resize: vertical;
+}
+
+#reportCrimeBtn {
+    background-color: #dc3545; /* Red background */
+    color: white; /* White text */
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 0 5px;
+}
+
+.vote-buttons button:hover {
+    background-color: #c82333; /* Darker red on hover */
+}
+
+#crimeReportForm button#cancelCrimeReport {
+    background-color: #6c757d;
+}
+
+#crimeReportForm button#cancelCrimeReport:hover {
+    background-color: #5a6268;
+}
+
+#successMessage {
+    text-align: center;
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    border-radius: 4px;
+}
+
+#crimeReportForm .location-block {
+    background-color: #f8f9fa;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+}
+
+#crimeReportForm .address-block {
+    background-color: #e9f5ff;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+}
+
+#crimeReportForm .location-block label,
+#crimeReportForm .address-block label {
+    color: #333;
+    font-weight: bold;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.custom-div-icon.triangle {
+    /* The triangle shape is created directly in the HTML for the icon */
+}
+
+.custom-div-icon.emoji-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+}
+
+/* Marker Style Map Control Widget */
+.marker-style-panel {
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.22);
+    padding: 10px 14px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #333;
+    z-index: 1000;
+    min-width: 130px;
+    margin-top: 42px !important; /* Space below Report Crime button */
+    border: 1px solid #e0e0e0;
+}
+
+.marker-style-header {
+    font-weight: 700;
+    font-size: 0.82rem;
+    margin-bottom: 8px;
+    color: #1a73e8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 4px;
+}
+
+.marker-style-options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.marker-style-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.88rem;
+    cursor: pointer;
+    user-select: none;
+    font-weight: 500;
+    color: #444;
+}
+
+.marker-style-option:hover {
+    color: #1a73e8;
+}
+
+.marker-style-option input[type="radio"] {
+    cursor: pointer;
+    accent-color: #1a73e8;
+    margin: 0;
+}
+
+/* Route Navigation Side Panel */
+.route-nav-panel {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1000;
+    width: 340px;
+    max-width: calc(100vw - 30px);
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #333;
+    overflow: hidden;
+}
+
+.route-nav-panel .panel-header {
+    background: #1a73e8;
+    color: #ffffff;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.route-nav-panel .panel-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.route-nav-panel .panel-header button {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 1.4rem;
+    cursor: pointer;
+    line-height: 1;
+}
+
+#panelContent {
+    padding: 14px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+}
+
+.nav-input-group {
+    margin-bottom: 12px;
+}
+
+.nav-input-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #444;
+}
+
+.input-with-buttons {
+    display: flex;
+    gap: 4px;
+}
+
+.input-with-buttons input {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.88rem;
+}
+
+.input-with-buttons button {
+    background: #f1f3f4;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.2s;
+}
+
+.input-with-buttons button:hover {
+    background: #e8eaed;
+}
+
+.action-button-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+    margin-bottom: 12px;
+}
+
+.btn-primary {
+    flex: 2;
+    background-color: #1a73e8;
+    color: #ffffff;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: #1557b0;
+}
+
+.btn-secondary {
+    flex: 1;
+    background-color: #f1f3f4;
+    color: #3c4043;
+    border: 1px solid #dadce0;
+    padding: 10px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+    background-color: #e8eaed;
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 10px;
+    font-size: 0.88rem;
+    color: #1a73e8;
+    font-weight: 600;
+    background: #e8f0fe;
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+/* Route Cards */
+.route-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.route-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #fafafa;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.route-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.fastest-card { border-left: 5px solid #007bff; }
+.safest-card { border-left: 5px solid #28a745; }
+.optimal-card { border-left: 5px solid #6f42c1; }
+
+.route-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.route-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.route-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.fastest-indicator { background-color: #007bff; }
+.safest-indicator { background-color: #28a745; }
+.optimal-indicator { background-color: #6f42c1; }
+
+.route-card-metrics {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 0.85rem;
+}
+
+.route-card-metrics .metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.metric .label {
+    color: #666;
+}
+
+.metric .value {
+    font-weight: 600;
+    color: #222;
+}
+
+.safety-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #ffffff;
+    background-color: #777777;
+}
+
+/* Safety Level Legend */
+.map-legend {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.map-legend h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.85rem;
+    color: #333;
+}
+
+.legend-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.8rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legend-item .color-box {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+}

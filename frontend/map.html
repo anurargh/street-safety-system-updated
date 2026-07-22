@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Street Safety Map</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <!-- Custom Map Styles -->
+    <link rel="stylesheet" href="map-style.css">
+</head>
+<body>
+    <!-- Map Container -->
+    <div id="map"></div>
+
+    <!-- Report Hazard Button -->
+    <button id="reportCrimeBtn" style="position: absolute; top: 10px; right: 10px; z-index: 1000; background: #dc3545; color: white; padding: 10px 16px; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">⚠️ Report Hazard</button>
+
+    <!-- Navigation & Route Panel -->
+    <div id="routeNavigationPanel" class="route-nav-panel">
+        <div class="panel-header">
+            <h3>Safety-Aware Navigation</h3>
+            <button id="togglePanelBtn" title="Toggle Panel">&minus;</button>
+        </div>
+
+        <div id="panelContent">
+            <!-- Source Input -->
+            <div class="nav-input-group">
+                <label for="sourceInput">Start / Source:</label>
+                <div class="input-with-buttons">
+                    <input type="text" id="sourceInput" placeholder="Address or click map / location" />
+                    <button id="useMyLocationBtn" type="button" title="Use current GPS location">📍</button>
+                    <button id="pickSourceBtn" type="button" title="Pick on map">🗺️</button>
+                </div>
+            </div>
+
+            <!-- Destination Input -->
+            <div class="nav-input-group">
+                <label for="destInput">Destination:</label>
+                <div class="input-with-buttons">
+                    <input type="text" id="destInput" placeholder="Address or click map" />
+                    <button id="pickDestBtn" type="button" title="Pick on map">🗺️</button>
+                </div>
+            </div>
+
+            <div class="action-button-row">
+                <button id="generateRoutesBtn" class="btn-primary">Generate Routes</button>
+                <button id="clearRoutesBtn" class="btn-secondary">Clear</button>
+            </div>
+
+            <div id="routeLoadingSpinner" style="display: none;" class="loading-spinner">
+                Generating Safety-Aware Routes...
+            </div>
+
+            <!-- Route Info Cards Container -->
+            <div id="routeCardsContainer" class="route-cards-container" style="display: none;">
+                <!-- Fastest Route Card -->
+                <div id="fastestRouteCard" class="route-card fastest-card">
+                    <div class="route-card-header">
+                        <span class="route-title"><span class="route-indicator fastest-indicator"></span> Fastest Route</span>
+                        <input type="checkbox" id="toggleFastestRoute" checked title="Show/Hide route on map" />
+                    </div>
+                    <div class="route-card-metrics">
+                        <div class="metric"><span class="label">Distance:</span> <span id="fastestDistance" class="value">0 km</span></div>
+                        <div class="metric"><span class="label">Hazard Score:</span> <span id="fastestHazard" class="value">0</span></div>
+                        <div class="metric"><span class="label">Safety:</span> <span id="fastestSafety" class="safety-badge">Unknown</span></div>
+                    </div>
+                </div>
+
+                <!-- Safest Route Card -->
+                <div id="safestRouteCard" class="route-card safest-card">
+                    <div class="route-card-header">
+                        <span class="route-title"><span class="route-indicator safest-indicator"></span> Safest Route</span>
+                        <input type="checkbox" id="toggleSafestRoute" checked title="Show/Hide route on map" />
+                    </div>
+                    <div class="route-card-metrics">
+                        <div class="metric"><span class="label">Distance:</span> <span id="safestDistance" class="value">0 km</span></div>
+                        <div class="metric"><span class="label">Hazard Score:</span> <span id="safestHazard" class="value">0</span></div>
+                        <div class="metric"><span class="label">Safety:</span> <span id="safestSafety" class="safety-badge">Unknown</span></div>
+                    </div>
+                </div>
+
+                <!-- Optimal Route Card -->
+                <div id="optimalRouteCard" class="route-card optimal-card">
+                    <div class="route-card-header">
+                        <span class="route-title"><span class="route-indicator optimal-indicator"></span> Optimal Route</span>
+                        <input type="checkbox" id="toggleOptimalRoute" checked title="Show/Hide route on map" />
+                    </div>
+                    <div class="route-card-metrics">
+                        <div class="metric"><span class="label">Distance:</span> <span id="optimalDistance" class="value">0 km</span></div>
+                        <div class="metric"><span class="label">Hazard Score:</span> <span id="optimalHazard" class="value">0</span></div>
+                        <div class="metric"><span class="label">Safety:</span> <span id="optimalSafety" class="safety-badge">Unknown</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Safety Levels Legend -->
+            <div class="map-legend">
+                <h4>Safety Levels Legend</h4>
+                <div class="legend-grid">
+                    <div class="legend-item"><span class="color-box" style="background-color: #1a73e8;"></span> Blue = Very Safe</div>
+                    <div class="legend-item"><span class="color-box" style="background-color: #34a853;"></span> Green = Safe</div>
+                    <div class="legend-item"><span class="color-box" style="background-color: #fbbc04;"></span> Yellow = Moderate</div>
+                    <div class="legend-item"><span class="color-box" style="background-color: #ff6d01;"></span> Orange = Unsafe</div>
+                    <div class="legend-item"><span class="color-box" style="background-color: #ea4335;"></span> Red = Dangerous</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hazard Report Form -->
+    <div id="crimeReportForm" style="display: none;">
+        <h3>Report a Hazard</h3>
+        <form id="crimeForm">
+            <div class="form-group">
+                <label for="crime-type">Hazard Type:</label>
+                <select id="crime-type" name="crime-type" required>
+                    <option value="">Select Hazard Type</option>
+                    <option value="Road Accident">🚗 Road Accident</option>
+                    <option value="Pothole">🕳️ Pothole</option>
+                    <option value="Broken Streetlight">💡 Broken Streetlight</option>
+                    <option value="Poor Lighting">🌑 Poor Lighting</option>
+                    <option value="Stray Dogs">🐕 Stray Dogs</option>
+                    <option value="Road Construction">🚧 Road Construction</option>
+                    <option value="Fallen Tree">🌳 Fallen Tree</option>
+                    <option value="Flooded Road">🌊 Waterlogging / Flooded Road</option>
+                    <option value="Traffic Signal Failure">🚦 Traffic Signal Failure</option>
+                    <option value="Unsafe Crossing">🚶 Unsafe Crossing</option>
+                    <option value="Open Manhole">🕳️ Open Manhole</option>
+                    <option value="Medical Emergency">🚑 Medical Emergency</option>
+                    <option value="Fire Hazard">🔥 Fire Hazard</option>
+                    <option value="Crime Alert">🚨 Crime Alert</option>
+                    <option value="General Hazard">⚠️ General Hazard</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label for="hazard-severity">Severity Rating (1 - 10):</label>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="range" id="hazard-severity" name="hazard-severity" min="1" max="10" value="6" style="flex: 1;" oninput="document.getElementById('severityVal').textContent = this.value">
+                    <span id="severityVal" style="font-weight: bold; width: 24px; text-align: center; color: #1a73e8;">6</span>
+                </div>
+            </div>
+
+            <div class="location-block" style="background: #f1f3f4; padding: 12px; border-radius: 6px; margin-bottom: 12px;">
+                <label for="location">Location (Click Map or Pick):</label>
+                <div style="display: flex; gap: 6px; margin-top: 4px;">
+                    <input type="text" id="location" placeholder="Click on map to place pin..." required style="flex: 1; margin-bottom: 0;">
+                    <button id="pickReportLocationBtn" type="button" title="Pick on map" style="background: #1a73e8; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap;">🗺️ Pick</button>
+                </div>
+                <small id="locationHint" style="color: #1a73e8; display: block; margin-top: 6px; font-weight: 500;">📍 Click anywhere on map or drag pin to adjust coordinates.</small>
+            </div>
+
+            <div class="address-block" style="margin-bottom: 12px;">
+                <label for="address">Address / Landmark (Optional):</label>
+                <input type="text" id="address" placeholder="e.g., Near City Bus Stop, Station Road">
+            </div>
+
+            <label for="crime-details">Details / Description:</label>
+            <textarea id="crime-details" rows="3" placeholder="Provide extra details about the hazard..."></textarea>
+
+            <div id="successMessage" style="color: #28a745; font-weight: bold; display: none; margin-top: 10px; padding: 8px; background: #e8f5e9; border-radius: 4px; text-align: center;">Hazard reported successfully!</div>
+            <div style="display: flex; gap: 10px; margin-top: 14px;">
+                <button type="submit" id="submitCrimeBtn" style="flex: 1; background: #dc3545; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.95rem;">Submit Report</button>
+                <button type="button" id="cancelCrimeReport" style="background: #6c757d; color: white; border: none; padding: 10px 14px; border-radius: 4px; cursor: pointer; font-weight: bold;">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Map Initialization Script -->
+    <script src="map-script.js"></script>
+</body>
+</html>
