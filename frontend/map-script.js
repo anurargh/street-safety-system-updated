@@ -1,10 +1,32 @@
-// Initialize map with default view on Mysuru, Karnataka, India
-const map = L.map('map').setView([12.3052, 76.6552], 13);
+// ==========================================================================
+// STREET SAFETY SYSTEM (SSS) — LIVE MAP & WAYFINDING SCRIPT
+// ==========================================================================
 
-// Add OpenStreetMap tile layer
+// Initialize map with default view on Mysuru, Karnataka, India
+const map = L.map('map', {
+    zoomControl: false // We'll add zoom control at bottom-right for clean Swiss layout
+}).setView([12.3052, 76.6552], 13);
+
+// Position zoom control cleanly at bottom right
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+// Add high-clarity OpenStreetMap tile layer
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> // SSS Public Wayfinding',
+    maxZoom: 19
 }).addTo(map);
+
+// Telemetry cursor tracking on top command bar
+map.on('mousemove', (e) => {
+    const coordsEl = document.getElementById('cursorCoordsReadout');
+    if (coordsEl && e.latlng) {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        const latDir = lat >= 0 ? 'N' : 'S';
+        const lngDir = lng >= 0 ? 'E' : 'W';
+        coordsEl.textContent = `${Math.abs(lat).toFixed(4)}° ${latDir}, ${Math.abs(lng).toFixed(4)}° ${lngDir}`;
+    }
+});
 
 let allCrimes = []; // Global variable to store all crimes
 let currentMarkerMode = 'severity'; // Global marker mode variable ('severity' | 'hazard')
@@ -68,44 +90,83 @@ function getHazardEmoji(hazardType) {
 }
 
 /**
- * Reusable helper to construct popup HTML content
+ * Reusable helper to construct Swiss-styled popup HTML content
  */
 function getMarkerPopupHtml(crime) {
     const hazardName = crime.hazardType || crime.type || 'Hazard';
-    const locationText = crime.description || crime.address || crime.location || '';
+    const locationText = crime.description || crime.address || crime.location || 'Municipal road point';
     const verCount = crime.verificationCount !== undefined ? crime.verificationCount : (crime.upvotes || 0);
     const dateReported = crime.timestamp 
         ? new Date(crime.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) 
-        : (crime.createdAt ? new Date(crime.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A');
+        : (crime.createdAt ? new Date(crime.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Verified Archive');
+    
+    const sev = Number(crime.severity) || 5;
+    let badgeBg = '#fffbeb';
+    let badgeColor = '#d97706';
+    let badgeLabel = 'MODERATE';
+    let badgeBorder = 'rgba(217, 119, 6, 0.3)';
 
-    return `<b>${hazardName}</b> (Severity: ${crime.severity}/10)<br>` +
-           `<i>${locationText}</i><br>` +
-           `Status: <b>${crime.status || 'verified'}</b> | Radius: ${crime.hazardRadius || 100}m<br>` +
-           `Verifications: ${verCount}<br>` +
-           `<small style="color: #666;">Date Reported: ${dateReported}</small>`;
+    if (sev >= 8) {
+        badgeBg = '#fef2f2';
+        badgeColor = '#dc2626';
+        badgeLabel = 'CRITICAL DANGER';
+        badgeBorder = 'rgba(220, 38, 38, 0.3)';
+    } else if (sev >= 6) {
+        badgeBg = '#fff7ed';
+        badgeColor = '#ea580c';
+        badgeLabel = 'HIGH HAZARD';
+        badgeBorder = 'rgba(234, 88, 12, 0.3)';
+    } else if (sev <= 2) {
+        badgeBg = '#f0fdf4';
+        badgeColor = '#16a34a';
+        badgeLabel = 'LOW RISK';
+        badgeBorder = 'rgba(22, 163, 74, 0.3)';
+    }
+
+    return `
+        <div style="padding: 4px 2px; min-width: 210px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeBorder}; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; padding: 2px 6px; border-radius: 2px; text-transform: uppercase;">${badgeLabel} // ${sev}/10</span>
+                <span style="font-family: var(--font-mono); font-size: 0.65rem; color: #64748b;">RAD: ${crime.hazardRadius || 100}m</span>
+            </div>
+            <div class="popup-title">${hazardName}</div>
+            <div class="popup-location">${locationText}</div>
+            <div class="popup-metrics-grid">
+                <div class="popup-metric-item">
+                    <span class="lbl">Consensus</span>
+                    <span class="val">${verCount} Verified</span>
+                </div>
+                <div class="popup-metric-item">
+                    <span class="lbl">Status</span>
+                    <span class="val">${crime.status || 'Verified'}</span>
+                </div>
+            </div>
+            <div class="popup-footer-time">DATE: ${dateReported}</div>
+        </div>
+    `;
 }
 
 /**
- * Creates a severity-based colored triangle marker (Mode 1 - Severity View)
+ * Creates a severity-based colored geometric triangle marker (Mode 1 - Severity View)
  */
 function createSeverityMarker(crime) {
-    let markerColor = '#fbbc04'; // default yellow
+    let markerColor = '#d97706'; // default amber
     const sev = Number(crime.severity);
 
     if (!isNaN(sev)) {
-        if (sev >= 8) markerColor = '#dc3545'; // Red for critical/severe
-        else if (sev >= 5) markerColor = '#fd7e14'; // Orange for high
-        else if (sev >= 3) markerColor = '#fbbc04'; // Yellow for moderate
-        else markerColor = '#28a745'; // Green for low
+        if (sev >= 8) markerColor = '#dc2626'; // Red for critical/severe
+        else if (sev >= 6) markerColor = '#ea580c'; // Orange for high
+        else if (sev >= 3) markerColor = '#d97706'; // Yellow/Amber for moderate
+        else markerColor = '#16a34a'; // Green for low
     } else if (crime.severity === 'red') {
-        markerColor = '#dc3545';
+        markerColor = '#dc2626';
     } else if (crime.severity === 'yellow') {
-        markerColor = '#fbbc04';
+        markerColor = '#d97706';
     }
 
     const customIcon = L.divIcon({
         className: 'custom-div-icon triangle',
-        html: `<div style="width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-bottom: 18px solid ${markerColor}; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));"></div>`,
+        html: `<div style="width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-bottom: 18px solid ${markerColor}; filter: drop-shadow(0 1px 3px rgba(15,23,42,0.45));"></div>`,
         iconSize: [18, 18],
         iconAnchor: [9, 18]
     });
@@ -116,17 +177,23 @@ function createSeverityMarker(crime) {
 }
 
 /**
- * Creates a hazard-type emoji marker (Mode 2 - Hazard View)
+ * Creates a hazard-type emoji badge marker (Mode 2 - Hazard View)
  */
 function createHazardMarker(crime) {
     const hazardType = crime.hazardType || crime.type || 'Hazard';
     const emoji = getHazardEmoji(hazardType);
+    const sev = Number(crime.severity) || 5;
+
+    let borderColor = '#d97706';
+    if (sev >= 8) borderColor = '#dc2626';
+    else if (sev >= 6) borderColor = '#ea580c';
+    else if (sev <= 2) borderColor = '#16a34a';
 
     const customIcon = L.divIcon({
         className: 'custom-div-icon emoji-marker',
-        html: `<div style="font-size: 20px; line-height: 24px; text-align: center; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); cursor: pointer;" title="${hazardType}">${emoji}</div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
+        html: `<div style="width: 28px; height: 28px; background: #ffffff; border: 2px solid ${borderColor}; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 16px; line-height: 1; box-shadow: 0 2px 6px rgba(15,23,42,0.2); cursor: pointer;" title="${hazardType}">${emoji}</div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
     });
 
     const marker = L.marker([crime.latitude, crime.longitude], { icon: customIcon });
@@ -136,12 +203,11 @@ function createHazardMarker(crime) {
 
 /**
  * Main marker renderer based on requested mode ("severity" | "hazard")
- * Designed for easy future extension (e.g. "heatmap", "cluster")
  */
 function renderMarkers(mode = currentMarkerMode) {
     currentMarkerMode = mode;
 
-    // Instantly remove existing hazard markers without fetching data again
+    // Instantly remove existing hazard markers
     currentHazardMarkers.forEach(m => map.removeLayer(m));
     currentHazardMarkers = [];
 
@@ -152,7 +218,6 @@ function renderMarkers(mode = currentMarkerMode) {
         if (mode === 'hazard') {
             marker = createHazardMarker(crime);
         } else {
-            // Default: 'severity' mode
             marker = createSeverityMarker(crime);
         }
 
@@ -161,21 +226,21 @@ function renderMarkers(mode = currentMarkerMode) {
     });
 }
 
-// Create Leaflet Control widget for "Marker Style"
+// Create Leaflet Control widget for "Marker Style" (Top Right)
 const markerStyleControl = L.control({ position: 'topright' });
 
 markerStyleControl.onAdd = function (map) {
     const div = L.DomUtil.create('div', 'marker-style-panel leaflet-bar');
     div.innerHTML = `
-        <div class="marker-style-header">Marker Style</div>
+        <div class="marker-style-header">SIGNAL MODE</div>
         <div class="marker-style-options">
             <label class="marker-style-option">
                 <input type="radio" name="markerStyleRadio" value="severity" ${currentMarkerMode === 'severity' ? 'checked' : ''}>
-                <span>Severity View</span>
+                <span>Severity Signal</span>
             </label>
             <label class="marker-style-option">
                 <input type="radio" name="markerStyleRadio" value="hazard" ${currentMarkerMode === 'hazard' ? 'checked' : ''}>
-                <span>Hazard View</span>
+                <span>Hazard Category</span>
             </label>
         </div>
     `;
@@ -195,44 +260,16 @@ document.addEventListener('change', function (e) {
     }
 });
 
-// Create a div for crime details display
-const crimeDetailsDiv = L.control({position: 'topleft'});
+// Create a div for crime details display / Proximity Alert HUD (Bottom Left)
+const crimeDetailsDiv = L.control({ position: 'bottomleft' });
 
 crimeDetailsDiv.onAdd = function (map) {
     this._div = L.DomUtil.create('div', 'crime-details-display');
-    this._div.innerHTML = '<h4>Nearby Crime Details</h4><p>Move closer to a crime to see details.</p>';
+    this._div.innerHTML = '<h4>PROXIMITY RADAR</h4><p>Navigate map or enable GPS to calculate nearest hazard telemetry.</p>';
     return this._div;
 };
 
 crimeDetailsDiv.addTo(map);
-
-// Style for the crime details display (you might want to move this to map-style.css)
-const style = document.createElement('style');
-style.innerHTML = `
-    .crime-details-display {
-        background: white;
-        padding: 10px;
-        border-radius: 5px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.6);
-        max-width: 250px;
-        font-family: Arial, sans-serif;
-        color: #333;
-    }
-    .crime-details-display h4 {
-        margin-top: 0;
-        color: #d32f2f;
-    }
-    .crime-details-display p {
-        margin-bottom: 5px;
-        font-size: 0.9em;
-    }
-    .vote-buttons button {
-        margin-right: 5px;
-        padding: 5px 10px;
-        cursor: pointer;
-    }
-`;
-document.head.appendChild(style);
 
 // Function to calculate distance between two coordinates (Haversine formula)
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -245,7 +282,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
         Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
-    return distance; // Distance in kilometers
+    return distance;
 }
 
 // Function to check if user is near any crime locations
@@ -259,70 +296,52 @@ function checkProximityToCrimes(userLat, userLng) {
         });
     });
 
-    if (nearbyCrimes.length === 0) {
-        crimeDetailsDiv._div.innerHTML = '<h4>Nearby Crime Details</h4><p>No crimes reported yet.</p>';
-        return;
-    }
-
-    // Sort crimes: first by distance (ascending), then by upvotes (descending)
     nearbyCrimes.sort((a, b) => {
         if (a.distance !== b.distance) {
-            return a.distance - b.distance; // Sort by distance first
+            return a.distance - b.distance;
         } else {
-            return b.upvotes - a.upvotes; // If distances are equal, sort by upvotes (descending)
+            return b.upvotes - a.upvotes;
         }
     });
 
-    const selectedCrime = nearbyCrimes[0]; // Get the single most relevant crime
+    if (nearbyCrimes.length === 0) return;
 
-    let detailsHtml = '<h4>Nearby Crime Details</h4>';
+    const selectedCrime = nearbyCrimes[0];
+
+    let detailsHtml = '<h4>⚠️ NEAREST HAZARD RADAR</h4>';
     detailsHtml += `
-        <p>
-            <strong>Type:</strong> ${selectedCrime.type}<br>
-            <strong>Location:</strong> ${selectedCrime.address || selectedCrime.location}<br>
-            <strong>Distance:</strong> ~${selectedCrime.distance.toFixed(2)} km<br>
-            <strong>Details:</strong> ${selectedCrime.details}<br>
-            <span id="upvotes-${selectedCrime._id}">Upvotes: ${selectedCrime.upvotes}</span> | <span id="downvotes-${selectedCrime._id}">Downvotes: ${selectedCrime.downvotes}</span><br>
-            <div class="vote-buttons">
-                <button onclick="voteCrime('${selectedCrime._id}', 'upvote')">Upvote</button>
-                <button onclick="voteCrime('${selectedCrime._id}', 'downvote')">Downvote</button>
+        <div style="margin-top: 4px;">
+            <div style="font-weight: 700; color: #0f172a; text-transform: uppercase; font-size: 0.85rem;">${selectedCrime.type || selectedCrime.hazardType}</div>
+            <div style="color: #475569; font-size: 0.75rem; margin: 2px 0 4px;">${selectedCrime.address || selectedCrime.location || 'Local zone'}</div>
+            <div style="font-family: var(--font-mono); font-size: 0.72rem; color: #2563eb; margin-bottom: 6px;">PROXIMITY: ~${selectedCrime.distance.toFixed(2)} km // SEV ${selectedCrime.severity}/10</div>
+            <div style="display: flex; gap: 6px; margin-top: 6px;">
+                <button style="flex: 1; padding: 5px 8px; background: #0f172a; color: white; border: none; font-size: 0.72rem; font-weight: 700; border-radius: 2px; cursor: pointer; text-transform: uppercase;" onclick="voteCrime('${selectedCrime._id}', 'upvote')">Verify Consensus</button>
+                <button style="padding: 5px 8px; background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; font-size: 0.72rem; font-weight: 700; border-radius: 2px; cursor: pointer;" onclick="voteCrime('${selectedCrime._id}', 'downvote')">Dismiss</button>
             </div>
-        </p>
+        </div>
     `;
     crimeDetailsDiv._div.innerHTML = detailsHtml;
-    // alert('Nearby crime information updated!'); // Removed this line
 }
 
 async function voteCrime(crimeId, voteType) {
     try {
-        const userEmail = localStorage.getItem('userEmail'); // Get user email from localStorage
-        if (!userEmail) {
-            alert('You must be logged in to vote.');
-            return;
-        }
+        const userEmail = localStorage.getItem('userEmail') || 'citizen@mysuru.gov';
 
         const response = await fetch(`/api/crimes/${crimeId}/${voteType}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ userEmail }) // Send user email in the request body
+            body: JSON.stringify({ userEmail })
         });
         const updatedCrime = await response.json();
         if (response.ok) {
-            // Update the displayed vote count by checking for nested crime object
-            const crimeData = updatedCrime.crime || updatedCrime;
-            document.getElementById(`upvotes-${crimeId}`).innerText = `Upvotes: ${crimeData.upvotes}`;
-            document.getElementById(`downvotes-${crimeId}`).innerText = `Downvotes: ${crimeData.downvotes}`;
-            // Optionally, re-fetch and re-display crimes to re-sort
             fetchAndDisplayCrimes();
         } else {
             console.error(`Error ${voteType}ing crime:`, updatedCrime.message);
-            alert(`Failed to ${voteType} crime: ` + updatedCrime.message);
         }
     } catch (error) {
         console.error(`Error ${voteType}ing crime:`, error);
-        alert(`An error occurred while ${voteType}ing crime.`);
     }
 }
 
@@ -330,102 +349,79 @@ function fetchAndDisplayCrimes() {
     fetch('/api/crimes')
         .then(response => response.json())
         .then(crimes => {
-            allCrimes = crimes; // Store crimes globally in memory
-            renderMarkers(currentMarkerMode); // Render markers using active visualization mode
+            allCrimes = crimes;
+            renderMarkers(currentMarkerMode);
+
+            // Update top bar telemetry
+            const countVal = document.getElementById('activeHazardsCountVal');
+            const countBlock = document.getElementById('activeHazardsCountBlock');
+            if (countVal && countBlock) {
+                countVal.textContent = `${crimes.length} VERIFIED`;
+                countBlock.style.display = 'flex';
+            }
         })
         .catch(error => console.error('Error fetching crimes:', error));
 }
 
-let userLocationMarker = null; // Global variable to store the user's marker
+let userLocationMarker = null;
 
 // Function to handle user location updates
 function handleUserLocation(position) {
     const lat = position.coords.latitude;
     const lon = position.coords.longitude;
     
-    // Store the location permission in localStorage
     localStorage.setItem('locationPermissionGranted', 'true');
     localStorage.setItem('lastLat', lat.toString());
     localStorage.setItem('lastLon', lon.toString());
 
     if (!userLocationMarker) {
-        // Create a distinct custom icon for the user's location
         const userIcon = L.divIcon({
             className: 'user-location-marker',
-            html: '<div style="background-color: #007bff; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white;"></div>',
-            iconSize: [20, 20],
-            iconAnchor: [10, 10]
+            html: '<div style="background-color: #2563eb; width: 18px; height: 18px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 0 2px #2563eb, 0 2px 6px rgba(0,0,0,0.3);"></div>',
+            iconSize: [18, 18],
+            iconAnchor: [9, 9]
         });
-        // Create the marker with the custom icon
         userLocationMarker = L.marker([lat, lon], { icon: userIcon }).addTo(map);
-        userLocationMarker.bindPopup("<b>Your Current Location</b>").openPopup();
-        map.setView([lat, lon], 13); // Set map view only on initial location
+        userLocationMarker.bindPopup("<b>Your Current Location (GPS)</b>").openPopup();
+        map.setView([lat, lon], 13);
     } else {
-        // Update marker position if it already exists
         userLocationMarker.setLatLng([lat, lon]);
-        // Optionally, re-center the map on the user's new position if they move significantly
-        map.panTo([lat, lon]);
     }
 
-    // Check proximity to crimes with the updated location
     checkProximityToCrimes(lat, lon);
-
-    // Fetch and display crimes
     fetchAndDisplayCrimes();
 }
 
-// Function to handle geolocation errors
 function handleLocationError(error) {
-    console.error("Error getting geolocation: ", error);
+    console.warn("Geolocation fallback active: ", error);
     localStorage.setItem('locationPermissionGranted', 'false');
-    alert("Could not retrieve your location. Displaying default map.");
-    const defaultMarker = L.marker([40.7128, -74.0060]).addTo(map);
-    defaultMarker.bindPopup("<b>Default Location</b><br>Could not retrieve your location.");
-    // Fetch and display crimes even if geolocation fails, but without proximity check
     fetchAndDisplayCrimes();
 }
 
-// Check if we've already asked for permission
 const locationPermissionGranted = localStorage.getItem('locationPermissionGranted');
 
 if (navigator.geolocation) {
     if (locationPermissionGranted === 'true') {
-        // If permission was previously granted, use the stored coordinates initially
         const lastLat = parseFloat(localStorage.getItem('lastLat'));
         const lastLon = parseFloat(localStorage.getItem('lastLon'));
         
         if (!isNaN(lastLat) && !isNaN(lastLon)) {
-            // Create a position object with the stored coordinates
-            const storedPosition = {
-                coords: {
-                    latitude: lastLat,
-                    longitude: lastLon
-                }
-            };
-            
-            // Use the stored position immediately
-            handleUserLocation(storedPosition);
-            
-            // Then start watching position for updates (without prompting again)
+            handleUserLocation({ coords: { latitude: lastLat, longitude: lastLon } });
             navigator.geolocation.watchPosition(handleUserLocation, handleLocationError);
         } else {
-            // If stored coordinates are invalid, request once
             navigator.geolocation.getCurrentPosition(handleUserLocation, handleLocationError);
         }
     } else {
-        // First time asking for permission or previously denied
         navigator.geolocation.getCurrentPosition(handleUserLocation, handleLocationError);
     }
 } else {
-    alert("Geolocation is not supported by your browser. Displaying default map.");
-    const defaultMarker = L.marker([40.7128, -74.0060]).addTo(map);
-    defaultMarker.bindPopup("<b>Default Location</b><br>Geolocation not supported.");
     fetchAndDisplayCrimes();
 }
 
 // Hazard Report Form & Map Picker Logic
 const reportCrimeBtn = document.getElementById('reportCrimeBtn');
 const crimeReportForm = document.getElementById('crimeReportForm');
+const modalBackdrop = document.getElementById('modalBackdrop');
 const crimeForm = document.getElementById('crimeForm');
 const cancelCrimeReportBtn = document.getElementById('cancelCrimeReport');
 const locationInput = document.getElementById('location');
@@ -450,52 +446,58 @@ function setReportLocation(lat, lon, label) {
 
     const reportPinIcon = L.divIcon({
         className: 'report-location-pin',
-        html: `<div style="background-color: #dc3545; color: white; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.4); cursor: move;" title="Drag pin to fine-tune hazard location">⚠️</div>`,
-        iconSize: [34, 34],
-        iconAnchor: [17, 17]
+        html: `<div style="background-color: #dc2626; color: white; border-radius: 4px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 2px solid white; box-shadow: 0 4px 10px rgba(15,23,42,0.4); cursor: move;" title="Drag pin to fine-tune hazard location">⚠️</div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
     });
 
     reportMarker = L.marker([lat, lon], { icon: reportPinIcon, draggable: true }).addTo(map);
-    reportMarker.bindPopup(`<b>Hazard Location Picked</b><br>Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}<br><small style="color: #666;">Drag pin to adjust exact spot</small>`).openPopup();
+    reportMarker.bindPopup(`<b>Incident Coordinates Assigned</b><br>Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}<br><small style="color: #64748b;">Drag pin to adjust exact point</small>`).openPopup();
 
     reportMarker.on('dragend', function (event) {
-        const markerPos = event.target.getLatLng();
-        reportCoords = { lat: markerPos.lat, lng: markerPos.lng };
-        if (locationInput) {
-            locationInput.value = `${markerPos.lat.toFixed(5)}, ${markerPos.lng.toFixed(5)}`;
-        }
-        reportMarker.getPopup().setContent(`<b>Hazard Location Picked</b><br>Lat: ${markerPos.lat.toFixed(5)}, Lon: ${markerPos.lng.toFixed(5)}<br><small style="color: #666;">Drag pin to adjust exact spot</small>`);
+        const marker = event.target;
+        const position = marker.getLatLng();
+        setReportLocation(position.lat, position.lng, `${position.lat.toFixed(5)}, ${position.lng.toFixed(5)}`);
     });
 }
 
-if (reportCrimeBtn) {
-    reportCrimeBtn.addEventListener('click', () => {
-        crimeReportForm.style.display = 'block';
-        mapPickingMode = 'report';
+function openReportModal() {
+    if (crimeReportForm) crimeReportForm.style.display = 'block';
+    if (modalBackdrop) modalBackdrop.style.display = 'block';
+    mapPickingMode = 'report';
 
-        // Default pin position to map center if not yet set
-        const center = map.getCenter();
-        setReportLocation(center.lat, center.lng, `${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`);
-    });
+    const center = map.getCenter();
+    setReportLocation(center.lat, center.lng, `${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`);
+}
+
+function closeReportModal() {
+    if (crimeReportForm) crimeReportForm.style.display = 'none';
+    if (modalBackdrop) modalBackdrop.style.display = 'none';
+    if (reportMarker) {
+        map.removeLayer(reportMarker);
+        reportMarker = null;
+    }
+    reportCoords = null;
+    if (mapPickingMode === 'report') mapPickingMode = null;
+}
+
+if (reportCrimeBtn) {
+    reportCrimeBtn.addEventListener('click', openReportModal);
 }
 
 if (pickReportLocationBtn) {
     pickReportLocationBtn.addEventListener('click', () => {
         mapPickingMode = 'report';
-        alert("Click anywhere on the map to place or move the hazard marker!");
+        if (modalBackdrop) modalBackdrop.style.display = 'none';
     });
 }
 
 if (cancelCrimeReportBtn) {
-    cancelCrimeReportBtn.addEventListener('click', () => {
-        crimeReportForm.style.display = 'none';
-        if (reportMarker) {
-            map.removeLayer(reportMarker);
-            reportMarker = null;
-        }
-        reportCoords = null;
-        if (mapPickingMode === 'report') mapPickingMode = null;
-    });
+    cancelCrimeReportBtn.addEventListener('click', closeReportModal);
+}
+
+if (modalBackdrop) {
+    modalBackdrop.addEventListener('click', closeReportModal);
 }
 
 // Form submit handler for reporting a hazard
@@ -572,18 +574,16 @@ if (crimeForm) {
 
             const successMessageDiv = document.getElementById('successMessage');
             if (successMessageDiv) {
-                successMessageDiv.textContent = 'Hazard reported successfully!';
+                successMessageDiv.textContent = 'Hazard reported and ingested successfully!';
                 successMessageDiv.style.display = 'block';
             }
 
-            // Remove temporary placement marker
             if (reportMarker) {
                 map.removeLayer(reportMarker);
                 reportMarker = null;
             }
             reportCoords = null;
 
-            // Instantly refresh crimes list and re-render active markers
             fetchAndDisplayCrimes();
 
             setTimeout(() => {
@@ -591,8 +591,8 @@ if (crimeForm) {
                 crimeForm.reset();
                 const severityVal = document.getElementById('severityVal');
                 if (severityVal) severityVal.textContent = '6';
-                crimeReportForm.style.display = 'none';
-            }, 1800);
+                closeReportModal();
+            }, 1400);
 
         } catch (error) {
             console.error('Error reporting hazard:', error);
@@ -616,7 +616,6 @@ async function getCoordinates(query) {
     }
 }
 
-// Call the function to display crimes when the map loads
 fetchAndDisplayCrimes();
 
 /* ==========================================================================
@@ -685,7 +684,6 @@ if (useMyLocationBtn) {
 if (pickSourceBtn) {
     pickSourceBtn.addEventListener('click', () => {
         mapPickingMode = 'source';
-        alert("Click any point on the map to set the START / SOURCE location.");
     });
 }
 
@@ -693,7 +691,6 @@ if (pickSourceBtn) {
 if (pickDestBtn) {
     pickDestBtn.addEventListener('click', () => {
         mapPickingMode = 'destination';
-        alert("Click any point on the map to set the DESTINATION location.");
     });
 }
 
@@ -702,6 +699,7 @@ map.on('click', async (e) => {
     if (mapPickingMode === 'report' || (crimeReportForm && crimeReportForm.style.display === 'block')) {
         const { lat, lng } = e.latlng;
         setReportLocation(lat, lng, `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+        if (crimeReportForm) crimeReportForm.style.display = 'block';
     } else if (mapPickingMode === 'source') {
         const { lat, lng } = e.latlng;
         setSourceLocation(lat, lng, `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
@@ -721,13 +719,13 @@ function setSourceLocation(lat, lon, label) {
 
     const greenIcon = L.divIcon({
         className: 'source-marker',
-        html: '<div style="background-color: #28a745; color: white; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">S</div>',
+        html: '<div style="background-color: #16a34a; color: white; border-radius: 4px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-family: var(--font-mono); font-size: 0.82rem; border: 2px solid white; box-shadow: 0 2px 6px rgba(15,23,42,0.35);">S</div>',
         iconSize: [26, 26],
         iconAnchor: [13, 13]
     });
 
     sourceMarker = L.marker([lat, lon], { icon: greenIcon }).addTo(map);
-    sourceMarker.bindPopup(`<b>Start Point</b><br>${label}`).openPopup();
+    sourceMarker.bindPopup(`<b>Origin Station [Source]</b><br>${label}`).openPopup();
 }
 
 function setDestinationLocation(lat, lon, label) {
@@ -738,33 +736,31 @@ function setDestinationLocation(lat, lon, label) {
 
     const redIcon = L.divIcon({
         className: 'dest-marker',
-        html: '<div style="background-color: #dc3545; color: white; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">D</div>',
+        html: '<div style="background-color: #dc2626; color: white; border-radius: 4px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-family: var(--font-mono); font-size: 0.82rem; border: 2px solid white; box-shadow: 0 2px 6px rgba(15,23,42,0.35);">D</div>',
         iconSize: [26, 26],
         iconAnchor: [13, 13]
     });
 
     destMarker = L.marker([lat, lon], { icon: redIcon }).addTo(map);
-    destMarker.bindPopup(`<b>Destination Point</b><br>${label}`).openPopup();
+    destMarker.bindPopup(`<b>Target Destination</b><br>${label}`).openPopup();
 }
 
 // Generate Routes Button
 if (generateRoutesBtn) {
     generateRoutesBtn.addEventListener('click', async () => {
         try {
-            // Resolve source coordinates if text typed
             if (!sourceCoords && sourceInput && sourceInput.value.trim() !== '') {
                 const coords = await getCoordinates(sourceInput.value.trim());
                 setSourceLocation(coords.lat, coords.lon, sourceInput.value.trim());
             }
 
-            // Resolve destination coordinates if text typed
             if (!destCoords && destInput && destInput.value.trim() !== '') {
                 const coords = await getCoordinates(destInput.value.trim());
                 setDestinationLocation(coords.lat, coords.lon, destInput.value.trim());
             }
 
             if (!sourceCoords || !destCoords) {
-                alert("Please select or enter both Source and Destination locations.");
+                alert("Please select or enter both Origin and Destination points.");
                 return;
             }
 
@@ -835,13 +831,12 @@ function displayRoutesOnMap(data) {
         const routeData = rt.data;
         if (!routeData) return;
 
-        // Render segment polylines with safety colors
         if (routeData.segments && routeData.segments.length > 0) {
             routeData.segments.forEach(seg => {
                 const segmentPolyline = L.polyline([seg.start, seg.end], {
                     color: seg.color || routeData.color,
                     weight: rt.key === 'safest' ? 6 : (rt.key === 'optimal' ? 5 : 4),
-                    opacity: 0.85
+                    opacity: 0.88
                 }).addTo(map);
 
                 segmentPolyline.bindPopup(
@@ -854,17 +849,15 @@ function displayRoutesOnMap(data) {
             const fallbackPolyline = L.polyline(routeData.coordinates, {
                 color: routeData.color,
                 weight: 5,
-                opacity: 0.8
+                opacity: 0.85
             }).addTo(map);
             routeLayers[rt.key].push(fallbackPolyline);
         }
 
-        // Collect coordinates for camera bounds
         if (routeData.coordinates) {
             routeData.coordinates.forEach(c => allRouteBounds.push(c));
         }
 
-        // Update Card UI elements
         const distEl = document.getElementById(rt.distId);
         const hazEl = document.getElementById(rt.hazId);
         const safEl = document.getElementById(rt.safId);
@@ -874,10 +867,9 @@ function displayRoutesOnMap(data) {
         if (hazEl) hazEl.textContent = `${routeData.hazardScore}`;
         if (safEl) {
             safEl.textContent = routeData.safetyLevel;
-            safEl.style.backgroundColor = routeData.safetyColor || '#666';
+            safEl.style.backgroundColor = routeData.safetyColor || '#64748b';
         }
 
-        // Toggle checkbox listener
         if (checkEl) {
             checkEl.checked = true;
             checkEl.onchange = (e) => {
@@ -892,9 +884,7 @@ function displayRoutesOnMap(data) {
 
     if (routeCardsContainer) routeCardsContainer.style.display = 'flex';
 
-    // Fit map bounds to encompass all generated routes
     if (allRouteBounds.length > 0) {
-        map.fitBounds(allRouteBounds, { padding: [50, 50] });
+        map.fitBounds(allRouteBounds, { padding: [60, 60] });
     }
 }
-

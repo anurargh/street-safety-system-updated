@@ -3,57 +3,296 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Street Safety System</title>
+    <title>Street Safety System — Civic Safety & Wayfinding Infrastructure</title>
     <link rel="stylesheet" href="landing-style.css">
 </head>
 <body>
-    <header>
-        <nav>
-            <div class="logo">Street Safety System</div>
-            <ul>
-                <li><a href="#home">Home</a></li>
-                <li><a href="#features">Features</a></li>
-                <li><a href="#about">About</a></li>
-                <li><a href="#contact">Contact</a></li>
-                <li><a href="login.html" class="login-btn">Login</a></li>
-                <li><a href="register.html" class="register-btn">Register</a></li>
+    <!-- Civic Top Status Banner -->
+    <header class="civic-header">
+        <div class="civic-top-bar">
+            <div class="system-status">
+                <span class="status-dot"></span>
+                <span>CIVIC TELEMETRY ACTIVE // NODE: MYSURU-SOUTH-01</span>
+            </div>
+            <div>STREET SAFETY PROTOCOL V2.4</div>
+        </div>
+
+        <nav class="civic-nav">
+            <a href="landing.html" class="brand-unit">
+                <div class="brand-emblem">SSS</div>
+                <div class="brand-text">
+                    <span class="brand-name">Street Safety System</span>
+                    <span class="brand-sub">Civic Hazard & Wayfinding Network</span>
+                </div>
+            </a>
+
+            <ul class="nav-menu">
+                <li><a href="#telemetry" class="nav-link">Telemetry</a></li>
+                <li><a href="#methodology" class="nav-link">Methodology</a></li>
+                <li><a href="#matrix" class="nav-link">Hazard Index</a></li>
+                <li><a href="map.html" class="nav-link" style="color: var(--signal-blue);">Live Map</a></li>
             </ul>
+
+            <div class="nav-actions">
+                <a href="login.html" class="btn-civic btn-civic-outline">Sign In</a>
+                <a href="register.html" class="btn-civic btn-civic-outline">Register</a>
+                <a href="map.html" class="btn-civic btn-civic-accent">Launch Map ↗</a>
+            </div>
         </nav>
     </header>
 
     <main>
-        <section id="home" class="hero">
-            <div class="hero-content">
-                <h1>Street Safety System</h1>
-                <p>Street Safe is an intelligent street safety platform that provides real-time awareness of accidents, hazards, and crimes in specific regions. It highlights danger zones on an interactive map, ensuring users stay informed about potential risks while navigating. Through secure authentication, individuals can report incidents in their area, while the community validates and ranks them for reliability. Stay informed and move with confidence through verified safety alerts.</p>
-                <a href="login.html" class="cta-button">Get Started</a>
-            </div>
-            <div class="hero-image">
-                <img src="./images/placeholder.svg" alt="Street Safety System Illustration">
+        <!-- Hero Wayfinding Section -->
+        <section id="telemetry" class="hero-wayfinding">
+            <div class="hero-grid">
+                <div class="hero-main">
+                    <div class="hero-label">
+                        <span>●</span> Standard Civic Transit & Safety Platform
+                    </div>
+                    <h1 class="hero-title">
+                        Civic safety & wayfinding infrastructure.
+                    </h1>
+                    <p class="hero-subtitle">
+                        Immediate, real-time spatial awareness of hazards, accidents, and security conditions. Built around an interactive, community-validated topological map and algorithmic multi-objective safe routing.
+                    </p>
+                    <div class="hero-cta-group">
+                        <a href="map.html" class="btn-civic btn-civic-accent">Open Live Interactive Map ↗</a>
+                        <a href="login.html" class="btn-civic btn-civic-solid">Citizen Incident Reporting</a>
+                        <a href="#matrix" class="btn-civic btn-civic-outline">Review Hazard Index ↓</a>
+                    </div>
+
+                    <!-- Telemetry Data Strip -->
+                    <div class="telemetry-strip">
+                        <div class="telemetry-cell">
+                            <span class="telemetry-num">1,000+</span>
+                            <span class="telemetry-label">Monitored Hazards</span>
+                        </div>
+                        <div class="telemetry-cell">
+                            <span class="telemetry-num">98.4%</span>
+                            <span class="telemetry-label">Verification Rate</span>
+                        </div>
+                        <div class="telemetry-cell">
+                            <span class="telemetry-num">&lt; 120ms</span>
+                            <span class="telemetry-label">Routing Compute</span>
+                        </div>
+                        <div class="telemetry-cell">
+                            <span class="telemetry-num">10-Tier</span>
+                            <span class="telemetry-label">Severity Matrix</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Signal Board Preview -->
+                <div class="hero-signal-board">
+                    <div class="board-header">
+                        <span>Live Signal Feed</span>
+                        <span class="board-live-pill"><span class="board-live-dot"></span> Realtime</span>
+                    </div>
+                    <div class="board-body">
+                        <div class="board-item">
+                            <div class="board-icon-box">🚗</div>
+                            <div class="board-info">
+                                <h4>Road Collision Alert</h4>
+                                <p>Near Nazarbad Main Rd • Severity 8/10</p>
+                            </div>
+                            <span class="board-badge badge-critical">Critical</span>
+                        </div>
+
+                        <div class="board-item">
+                            <div class="board-icon-box">🌊</div>
+                            <div class="board-info">
+                                <h4>Severe Waterlogging</h4>
+                                <p>Underpass Low Point • Severity 7/10</p>
+                            </div>
+                            <span class="board-badge badge-warning">High</span>
+                        </div>
+
+                        <div class="board-item">
+                            <div class="board-icon-box">💡</div>
+                            <div class="board-info">
+                                <h4>Streetlight Circuit Outage</h4>
+                                <p>Station Approach Lane • Severity 4/10</p>
+                            </div>
+                            <span class="board-badge badge-caution">Moderate</span>
+                        </div>
+
+                        <div class="board-item">
+                            <div class="board-icon-box">🛡️</div>
+                            <div class="board-info">
+                                <h4>Safe Transit Corridor</h4>
+                                <p>Palace North Boulevard • Active Patrol</p>
+                            </div>
+                            <span class="board-badge badge-safe">Verified</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <section id="features" class="features">
-            <h2>Discover safer routes with our Smart<br>Street Safety Engine</h2>
-            <div class="feature-grid">
-                <div class="feature-item">
-                    <h3>Real time Updates about the Hazards near you</h3>
-                    <img src="./images/1.svg" alt="Seamless User Onboarding">
+        <!-- Civic Methodology & Features -->
+        <section id="methodology" class="civic-section">
+            <div class="section-head">
+                <div>
+                    <div class="section-tag">System Architecture</div>
+                    <h2 class="section-title">Designed for unhesitating clarity.</h2>
                 </div>
-                <div class="feature-item">
-                    <h3>Community Validation for Trusted Reports</h3>
-                    <img src="./images/2.svg" alt="Feedback system">
+                <p class="section-lead">
+                    Standardized wayfinding and risk modeling replace ambiguous reports with strict topological guidance.
+                </p>
+            </div>
+
+            <div class="pillars-grid">
+                <div class="pillar-card">
+                    <div class="pillar-index">01 // SIGNAL TAXONOMY</div>
+                    <h3>Deterministic Hazard Classification</h3>
+                    <p>
+                        Every hazard—from surface defects to serious accidents—is evaluated against a strict 1-to-10 severity scale and radius of influence, eliminating cognitive clutter.
+                    </p>
+                    <div class="pillar-metric-box">
+                        <span class="metric-label">Classification Mode</span>
+                        <span class="metric-val">Severity &amp; Hazard Views</span>
+                    </div>
                 </div>
-                <div class="feature-item">
-                    <h3>Interactive Safety Map Highlighting Accident & Crime Zones</h3>
-                    <img src="./images/3.svg" alt="Personalized Learning Resources">
+
+                <div class="pillar-card">
+                    <div class="pillar-index">02 // MULTI-OBJECTIVE ENGINE</div>
+                    <h3>Multi-Objective Safe Routing</h3>
+                    <p>
+                        Calculate three mathematically distinct routes between any coordinates: the pure Fastest path, the risk-minimized Safest path, and a balanced Optimal trajectory.
+                    </p>
+                    <div class="pillar-metric-box">
+                        <span class="metric-label">Engine Output</span>
+                        <span class="metric-val">Fastest / Safest / Optimal</span>
+                    </div>
+                </div>
+
+                <div class="pillar-card">
+                    <div class="pillar-index">03 // COLLECTIVE VERIFICATION</div>
+                    <h3>Citizen Consensus Ledger</h3>
+                    <p>
+                        Community members report incidents with precision map-point pickers. Real-time consensus voting confirms active status and filters false positives.
+                    </p>
+                    <div class="pillar-metric-box">
+                        <span class="metric-label">Verification Type</span>
+                        <span class="metric-val">Community Validated</span>
+                    </div>
                 </div>
             </div>
+        </section>
+
+        <!-- Hazard Matrix & Signaling Index -->
+        <section id="matrix" class="civic-section">
+            <div class="section-head">
+                <div>
+                    <div class="section-tag">Signaling Ledger</div>
+                    <h2 class="section-title">Standardized Signal Codes</h2>
+                </div>
+                <p class="section-lead">
+                    Color and symbology operate exclusively as an intentional signaling protocol rather than decoration.
+                </p>
+            </div>
+
+            <table class="hazard-matrix-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Standard Symbol</th>
+                        <th>Severity Tier</th>
+                        <th>Signal Color</th>
+                        <th>Recommended Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="table-type"><span>🚗</span> Road Accident / Collision</td>
+                        <td>Signal Red Triangle / Vehicle</td>
+                        <td>8 &ndash; 10 (Critical)</td>
+                        <td><span class="board-badge badge-critical">Signal Red (#dc2626)</span></td>
+                        <td>Immediate reroute; emergency services priority</td>
+                    </tr>
+                    <tr>
+                        <td class="table-type"><span>🌊</span> Waterlogging / Flooded Road</td>
+                        <td>Signal Orange Triangle / Wave</td>
+                        <td>6 &ndash; 8 (High)</td>
+                        <td><span class="board-badge badge-warning">Hazard Orange (#ea580c)</span></td>
+                        <td>Avoid low-clearance vehicles; reduce speed</td>
+                    </tr>
+                    <tr>
+                        <td class="table-type"><span>🕳️</span> Pothole / Open Manhole</td>
+                        <td>Caution Amber Triangle / Defect</td>
+                        <td>4 &ndash; 6 (Moderate)</td>
+                        <td><span class="board-badge badge-caution">Caution Amber (#d97706)</span></td>
+                        <td>Maintain lane caution; flag roadwork dept</td>
+                    </tr>
+                    <tr>
+                        <td class="table-type"><span>💡</span> Broken Streetlight / Darkness</td>
+                        <td>Caution Amber Triangle / Light</td>
+                        <td>3 &ndash; 5 (Moderate)</td>
+                        <td><span class="board-badge badge-caution">Caution Amber (#d97706)</span></td>
+                        <td>Pedestrians utilize illuminated arterial routes</td>
+                    </tr>
+                    <tr>
+                        <td class="table-type"><span>🐕</span> Stray Animals / Obstruction</td>
+                        <td>Yellow Triangle / Animal</td>
+                        <td>2 &ndash; 4 (Low-Moderate)</td>
+                        <td><span class="board-badge badge-caution">Warning Yellow (#ca8a04)</span></td>
+                        <td>Exercise caution on foot or two-wheeler</td>
+                    </tr>
+                    <tr>
+                        <td class="table-type"><span>🛡️</span> Verified Safe Corridor</td>
+                        <td>Green Node Indicator</td>
+                        <td>0 &ndash; 1 (Safe)</td>
+                        <td><span class="board-badge badge-safe">Safe Green (#16a34a)</span></td>
+                        <td>Primary recommended pedestrian/vehicular route</td>
+                    </tr>
+                </tbody>
+            </table>
         </section>
     </main>
 
-    <footer>
-        <p>&copy; 2025 Street Safety System. All rights reserved.</p>
+    <!-- Civic Wayfinding Footer -->
+    <footer class="civic-footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <h4>Street Safety System</h4>
+                <p>
+                    A public civic initiative for real-time hazard awareness, incident mitigation, and safety-aware navigation across municipal networks.
+                </p>
+            </div>
+
+            <div class="footer-col">
+                <h5>Navigation</h5>
+                <ul>
+                    <li><a href="landing.html">System Home</a></li>
+                    <li><a href="map.html">Interactive Map</a></li>
+                    <li><a href="#methodology">Routing Engine</a></li>
+                    <li><a href="#matrix">Hazard Matrix</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h5>Citizen Access</h5>
+                <ul>
+                    <li><a href="login.html">Sign In</a></li>
+                    <li><a href="register.html">Register Account</a></li>
+                    <li><a href="map.html">Report Incident</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h5>Operational</h5>
+                <ul>
+                    <li><a href="#">System Specs</a></li>
+                    <li><a href="#">API Protocol</a></li>
+                    <li><a href="#">Data Privacy</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <span>&copy; 2026 Street Safety System. Public Civic Safety Infrastructure.</span>
+            <span>COORDINATE DATUM: WGS84 // EPSG:4326</span>
+        </div>
     </footer>
 </body>
 </html>

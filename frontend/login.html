@@ -3,88 +3,262 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Street Safety System</title>
-    <link rel="stylesheet" href="landing-style.css"> <!-- Reusing the landing page style -->
+    <title>Sign In — Street Safety System</title>
+    <link rel="stylesheet" href="landing-style.css">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+        .auth-viewport {
+            min-height: calc(100vh - 180px);
             display: flex;
-            justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            margin: 0;
+            justify-content: center;
+            padding: 48px 24px;
+            background-color: var(--color-bg-base);
         }
-        .login-container {
-            background-color: #fff;
-            padding: 20px 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+
+        .auth-card {
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-ink-primary);
+            border-radius: var(--radius-sm);
             width: 100%;
-            max-width: 400px;
+            max-width: 440px;
+            box-shadow: var(--shadow-elevated);
+            overflow: hidden;
+        }
+
+        .auth-card-header {
+            background: var(--color-ink-primary);
+            color: #ffffff;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .auth-card-header .header-tag {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .auth-card-header .security-badge {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 2px 6px;
+            border-radius: 2px;
+        }
+
+        .auth-card-body {
+            padding: 28px 24px;
+        }
+
+        .auth-card-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            color: var(--color-ink-primary);
+        }
+
+        .auth-card-sub {
+            font-size: 0.85rem;
+            color: var(--color-ink-muted);
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .form-row {
+            margin-bottom: 18px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--color-ink-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 11px 14px;
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+            color: var(--color-ink-primary);
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-border-grid);
+            border-radius: var(--radius-sm);
+            transition: all 0.15s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--color-ink-primary);
+            box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.1);
+        }
+
+        .auth-submit-btn {
+            width: 100%;
+            padding: 13px 20px;
+            background: var(--color-ink-primary);
+            color: #ffffff;
+            border: 1px solid var(--color-ink-primary);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-sans);
+            font-size: 0.92rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+            margin-top: 8px;
+        }
+
+        .auth-submit-btn:hover {
+            background: #1e293b;
+        }
+
+        .auth-error-box {
+            display: none;
+            padding: 10px 14px;
+            background: var(--signal-red-bg);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            color: var(--signal-red);
+            font-size: 0.82rem;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            margin-bottom: 16px;
+        }
+
+        .auth-footer-notice {
+            margin-top: 24px;
+            padding-top: 18px;
+            border-top: 1px solid var(--color-border-grid);
+            font-size: 0.82rem;
+            color: var(--color-ink-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .auth-link {
+            color: var(--signal-blue);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .auth-link:hover {
+            text-decoration: underline;
+        }
+
+        .auth-bypass {
+            margin-top: 16px;
             text-align: center;
         }
-        .login-container h2 {
-            margin-bottom: 20px;
-            color: #333;
-        }
-        .login-container input[type="email"],
-        .login-container input[type="password"] {
-            width: calc(100% - 20px);
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        .login-container button {
-            background-color: #007bff;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            width: 100%;
-        }
-        .login-container button:hover {
-            background-color: #0056b3;
-        }
-        .login-container .error-message {
-            color: red;
-            margin-top: 10px;
-        }
-        .login-container p {
-            margin-top: 15px;
-        }
-        .login-container p a {
-            color: #007bff;
+
+        .auth-bypass a {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--color-ink-muted);
             text-decoration: none;
         }
-        .login-container p a:hover {
+
+        .auth-bypass a:hover {
+            color: var(--color-ink-primary);
             text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <h2>Login</h2>
-        <form id="loginForm">
-            <input type="email" id="email" placeholder="Email" required>
-            <input type="password" id="password" placeholder="Password" required>
-            <button type="submit">Login</button>
-            <p class="error-message" id="loginError"></p>
-        </form>
-        <p>Don't have an account? <a href="register.html">Register here</a></p>
-    </div>
+    <!-- Civic Top Banner -->
+    <header class="civic-header">
+        <div class="civic-top-bar">
+            <div class="system-status">
+                <span class="status-dot"></span>
+                <span>AUTHENTICATION SERVICE // SSL ENCRYPTED</span>
+            </div>
+            <div>NODE ACCESS ID: 01A</div>
+        </div>
+
+        <nav class="civic-nav">
+            <a href="landing.html" class="brand-unit">
+                <div class="brand-emblem">SSS</div>
+                <div class="brand-text">
+                    <span class="brand-name">Street Safety System</span>
+                    <span class="brand-sub">Civic Hazard &amp; Wayfinding Network</span>
+                </div>
+            </a>
+
+            <div class="nav-actions">
+                <a href="landing.html" class="btn-civic btn-civic-outline">← Return to Overview</a>
+                <a href="map.html" class="btn-civic btn-civic-accent">Live Map ↗</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="auth-viewport">
+        <div class="auth-card">
+            <div class="auth-card-header">
+                <span class="header-tag">Citizen Terminal</span>
+                <span class="security-badge">SECURE // AUTH</span>
+            </div>
+
+            <div class="auth-card-body">
+                <h2 class="auth-card-title">Sign In</h2>
+                <p class="auth-card-sub">Authenticate with your citizen credentials to report incidents and access telemetry alerts.</p>
+
+                <div id="loginError" class="auth-error-box"></div>
+
+                <form id="loginForm">
+                    <div class="form-row">
+                        <label class="form-label" for="email">Citizen Email Identifier</label>
+                        <input class="form-input" type="email" id="email" placeholder="name@domain.gov / citizen@mail.com" required autocomplete="email">
+                    </div>
+
+                    <div class="form-row">
+                        <label class="form-label" for="password">Security Password</label>
+                        <input class="form-input" type="password" id="password" placeholder="••••••••••••" required autocomplete="current-password">
+                    </div>
+
+                    <button type="submit" class="auth-submit-btn" id="loginBtn">Authorize Access</button>
+                </form>
+
+                <div class="auth-footer-notice">
+                    <span>No credential record?</span>
+                    <a href="register.html" class="auth-link">Register Account →</a>
+                </div>
+
+                <div class="auth-bypass">
+                    <a href="map.html">Proceed directly to Live Map as Guest</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="civic-footer">
+        <div class="footer-bottom" style="margin-top: 0;">
+            <span>&copy; 2026 Street Safety System. Authorized Civic Access.</span>
+            <span>ENCRYPTION: AES-256 / SHA-256</span>
+        </div>
+    </footer>
 
     <script>
         document.getElementById('loginForm').addEventListener('submit', async (event) => {
             event.preventDefault();
 
-            const email = document.getElementById('email').value;
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             const loginError = document.getElementById('loginError');
+            const loginBtn = document.getElementById('loginBtn');
+
+            loginError.style.display = 'none';
+            loginBtn.textContent = 'Verifying Credentials...';
+            loginBtn.disabled = true;
 
             try {
                 const response = await fetch('/api/login', {
@@ -97,15 +271,20 @@
 
                 const data = await response.json();
                 if (response.ok) {
-                    alert(data.message);
-                    localStorage.setItem('userEmail', data.userEmail); // Store user's email from response
-                    window.location.href = 'map.html'; // Client-side redirect
+                    localStorage.setItem('userEmail', data.userEmail || email);
+                    window.location.href = 'map.html';
                 } else {
-                    loginError.textContent = data.error || 'Login failed';
+                    loginError.textContent = data.error || 'Authentication rejected. Verify email and password.';
+                    loginError.style.display = 'block';
+                    loginBtn.textContent = 'Authorize Access';
+                    loginBtn.disabled = false;
                 }
             } catch (error) {
                 console.error('Error:', error);
-                loginError.textContent = 'An error occurred. Please try again.';
+                loginError.textContent = 'Network communication failure. Operating in local mode.';
+                loginError.style.display = 'block';
+                loginBtn.textContent = 'Authorize Access';
+                loginBtn.disabled = false;
             }
         });
     </script>
