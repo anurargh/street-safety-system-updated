@@ -17,14 +17,14 @@ const {
 } = require('./config/hazard-config');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// Serve landing page at root
-app.get('/', (req, res) => {
+// Serve landing page at root and index
+app.get(['/', '/index.html', '/landing'], (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/landing.html'));
 });
 
