@@ -34,6 +34,16 @@
         </div>
 
         <div class="map-bar-right">
+            <div id="authPromptContainer" style="display: flex; align-items: center; gap: 8px;">
+                <span id="authNotice" class="auth-notice" style="display: none; font-family: var(--font-mono); font-size: 0.72rem; color: #fbbf24;">
+                    <a href="login.html" style="color: #fbbf24; text-decoration: underline;">Log in to report or vote</a>
+                </span>
+                <a href="login.html" id="authLoginLink" class="btn-bar-action" style="display: inline-flex;">Sign In →</a>
+                <span id="authUserBadge" class="auth-user-badge" style="display: none; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 0.72rem; color: #93c5fd; background: rgba(37,99,235,0.2); border: 1px solid rgba(59,130,246,0.4); padding: 4px 8px; border-radius: 3px;">
+                    <span style="color: #60a5fa;">●</span> <span id="userEmailSpan"></span>
+                </span>
+                <button id="authLogoutBtn" class="btn-bar-action" style="display: none;" title="Log out">Sign Out ⎋</button>
+            </div>
             <button id="reportCrimeBtn" class="btn-report-hazard">⚠️ Report Hazard</button>
             <a href="landing.html" class="btn-bar-action" title="Return to Civic Landing Page">Overview ↗</a>
         </div>

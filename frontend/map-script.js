@@ -31,6 +31,9 @@ map.on('mousemove', (e) => {
 let allCrimes = []; // Global variable to store all crimes
 let currentMarkerMode = 'severity'; // Global marker mode variable ('severity' | 'hazard')
 let currentHazardMarkers = []; // Array of active hazard Leaflet marker objects for fast re-rendering
+let currentUser = null; // Stores authenticated email or null
+let lastProximityLat = null;
+let lastProximityLon = null;
 
 // Reusable Hazard Type to Emoji Mapping
 const HAZARD_EMOJI_MAP = {
@@ -123,6 +126,21 @@ function getMarkerPopupHtml(crime) {
         badgeBorder = 'rgba(22, 163, 74, 0.3)';
     }
 
+    const crimeId = crime._id || crime.id;
+    let voteControls = '';
+    if (currentUser) {
+        voteControls = `
+            <div style="display: flex; gap: 6px; margin-top: 8px;">
+                <button style="flex: 1; padding: 5px 8px; background: #0f172a; color: white; border: none; font-size: 0.72rem; font-weight: 700; border-radius: 2px; cursor: pointer; text-transform: uppercase;" onclick="voteCrime('${crimeId}', 'upvote')">▲ Verify</button>
+                <button style="padding: 5px 8px; background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; font-size: 0.72rem; font-weight: 700; border-radius: 2px; cursor: pointer;" onclick="voteCrime('${crimeId}', 'downvote')">▼ Dismiss</button>
+            </div>
+        `;
+    } else {
+        voteControls = `
+            <a href="login.html" class="auth-vote-prompt-pill">🔒 Log in to report or vote</a>
+        `;
+    }
+
     return `
         <div style="padding: 4px 2px; min-width: 210px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
@@ -142,6 +160,7 @@ function getMarkerPopupHtml(crime) {
                 </div>
             </div>
             <div class="popup-footer-time">DATE: ${dateReported}</div>
+            ${voteControls}
         </div>
     `;
 }
@@ -287,6 +306,9 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 
 // Function to check if user is near any crime locations
 function checkProximityToCrimes(userLat, userLng) {
+    lastProximityLat = userLat;
+    lastProximityLon = userLng;
+
     let nearbyCrimes = [];
     allCrimes.forEach(crime => {
         const distance = calculateDistance(userLat, userLng, crime.latitude, crime.longitude);
@@ -307,6 +329,25 @@ function checkProximityToCrimes(userLat, userLng) {
     if (nearbyCrimes.length === 0) return;
 
     const selectedCrime = nearbyCrimes[0];
+    const selectedCrimeId = selectedCrime._id || selectedCrime.id;
+
+    let buttonsHtml = '';
+    if (currentUser) {
+        buttonsHtml = `
+            <div style="display: flex; gap: 6px; margin-top: 6px;">
+                <button style="flex: 1; padding: 5px 8px; background: #0f172a; color: white; border: none; font-size: 0.72rem; font-weight: 700; border-radius: 2px; cursor: pointer; text-transform: uppercase;" onclick="voteCrime('${selectedCrimeId}', 'upvote')">Verify Consensus</button>
+                <button style="padding: 5px 8px; background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; font-size: 0.72rem; font-weight: 700; border-radius: 2px; cursor: pointer;" onclick="voteCrime('${selectedCrimeId}', 'downvote')">Dismiss</button>
+            </div>
+        `;
+    } else {
+        buttonsHtml = `
+            <div style="display: flex; gap: 6px; margin-top: 6px;">
+                <button disabled class="btn-vote-disabled" style="flex: 1; padding: 5px 8px; background: #94a3b8; color: white; border: none; font-size: 0.72rem; font-weight: 700; border-radius: 2px; text-transform: uppercase;">Verify</button>
+                <button disabled class="btn-vote-disabled" style="padding: 5px 8px; background: #f1f5f9; color: #94a3b8; border: 1px solid #cbd5e1; font-size: 0.72rem; font-weight: 700; border-radius: 2px;">Dismiss</button>
+            </div>
+            <a href="login.html" class="auth-vote-prompt-pill">🔒 Log in to report or vote</a>
+        `;
+    }
 
     let detailsHtml = '<h4>⚠️ NEAREST HAZARD RADAR</h4>';
     detailsHtml += `
@@ -314,31 +355,37 @@ function checkProximityToCrimes(userLat, userLng) {
             <div style="font-weight: 700; color: #0f172a; text-transform: uppercase; font-size: 0.85rem;">${selectedCrime.type || selectedCrime.hazardType}</div>
             <div style="color: #475569; font-size: 0.75rem; margin: 2px 0 4px;">${selectedCrime.address || selectedCrime.location || 'Local zone'}</div>
             <div style="font-family: var(--font-mono); font-size: 0.72rem; color: #2563eb; margin-bottom: 6px;">PROXIMITY: ~${selectedCrime.distance.toFixed(2)} km // SEV ${selectedCrime.severity}/10</div>
-            <div style="display: flex; gap: 6px; margin-top: 6px;">
-                <button style="flex: 1; padding: 5px 8px; background: #0f172a; color: white; border: none; font-size: 0.72rem; font-weight: 700; border-radius: 2px; cursor: pointer; text-transform: uppercase;" onclick="voteCrime('${selectedCrime._id}', 'upvote')">Verify Consensus</button>
-                <button style="padding: 5px 8px; background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; font-size: 0.72rem; font-weight: 700; border-radius: 2px; cursor: pointer;" onclick="voteCrime('${selectedCrime._id}', 'downvote')">Dismiss</button>
-            </div>
+            ${buttonsHtml}
         </div>
     `;
     crimeDetailsDiv._div.innerHTML = detailsHtml;
 }
 
 async function voteCrime(crimeId, voteType) {
-    try {
-        const userEmail = localStorage.getItem('userEmail') || 'citizen@mysuru.gov';
+    if (!currentUser) {
+        window.location.href = 'login.html?message=' + encodeURIComponent('Please log in to vote on hazards');
+        return;
+    }
 
+    try {
         const response = await fetch(`/api/crimes/${crimeId}/${voteType}`, {
             method: 'POST',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ userEmail })
+            }
         });
+
+        if (response.status === 401) {
+            window.location.href = 'login.html?message=' + encodeURIComponent('Please log in to vote on hazards');
+            return;
+        }
+
         const updatedCrime = await response.json();
         if (response.ok) {
             fetchAndDisplayCrimes();
         } else {
-            console.error(`Error ${voteType}ing crime:`, updatedCrime.message);
+            console.error(`Error ${voteType}ing crime:`, updatedCrime.message || updatedCrime.error);
         }
     } catch (error) {
         console.error(`Error ${voteType}ing crime:`, error);
@@ -346,7 +393,7 @@ async function voteCrime(crimeId, voteType) {
 }
 
 function fetchAndDisplayCrimes() {
-    fetch('/api/crimes')
+    fetch('/api/crimes', { credentials: 'include' })
         .then(response => response.json())
         .then(crimes => {
             allCrimes = crimes;
@@ -361,6 +408,83 @@ function fetchAndDisplayCrimes() {
             }
         })
         .catch(error => console.error('Error fetching crimes:', error));
+}
+
+// Authentication status manager
+async function checkAuthStatus() {
+    try {
+        const response = await fetch('/api/me', {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            currentUser = data.email;
+            updateAuthUI(true, data.email);
+        } else {
+            currentUser = null;
+            updateAuthUI(false);
+        }
+    } catch (err) {
+        currentUser = null;
+        updateAuthUI(false);
+    }
+}
+
+function updateAuthUI(isLoggedIn, email) {
+    const reportBtn = document.getElementById('reportCrimeBtn');
+    const authNotice = document.getElementById('authNotice');
+    const authLoginLink = document.getElementById('authLoginLink');
+    const authUserBadge = document.getElementById('authUserBadge');
+    const userEmailSpan = document.getElementById('userEmailSpan');
+    const authLogoutBtn = document.getElementById('authLogoutBtn');
+
+    if (isLoggedIn && email) {
+        if (reportBtn) {
+            reportBtn.disabled = false;
+            reportBtn.title = 'Report Hazard';
+        }
+        if (authNotice) authNotice.style.display = 'none';
+        if (authLoginLink) authLoginLink.style.display = 'none';
+        if (authUserBadge) {
+            authUserBadge.style.display = 'inline-flex';
+            if (userEmailSpan) userEmailSpan.textContent = email;
+        }
+        if (authLogoutBtn) authLogoutBtn.style.display = 'inline-flex';
+    } else {
+        if (reportBtn) {
+            reportBtn.disabled = true;
+            reportBtn.title = 'Log in to report or vote';
+        }
+        if (authNotice) authNotice.style.display = 'inline-flex';
+        if (authLoginLink) authLoginLink.style.display = 'inline-flex';
+        if (authUserBadge) authUserBadge.style.display = 'none';
+        if (authLogoutBtn) authLogoutBtn.style.display = 'none';
+    }
+
+    // Refresh proximity radar if active
+    if (lastProximityLat !== null && lastProximityLon !== null) {
+        checkProximityToCrimes(lastProximityLat, lastProximityLon);
+    }
+}
+
+// Wire logout button
+const authLogoutBtn = document.getElementById('authLogoutBtn');
+if (authLogoutBtn) {
+    authLogoutBtn.addEventListener('click', async () => {
+        try {
+            await fetch('/api/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+        } catch (e) {
+            console.error('Logout error:', e);
+        }
+        currentUser = null;
+        updateAuthUI(false);
+        fetchAndDisplayCrimes();
+    });
 }
 
 let userLocationMarker = null;
@@ -462,6 +586,11 @@ function setReportLocation(lat, lon, label) {
 }
 
 function openReportModal() {
+    if (!currentUser) {
+        window.location.href = 'login.html?message=' + encodeURIComponent('Please log in to report a hazard');
+        return;
+    }
+
     if (crimeReportForm) crimeReportForm.style.display = 'block';
     if (modalBackdrop) modalBackdrop.style.display = 'block';
     mapPickingMode = 'report';
@@ -504,6 +633,11 @@ if (modalBackdrop) {
 if (crimeForm) {
     crimeForm.addEventListener('submit', async (event) => {
         event.preventDefault();
+
+        if (!currentUser) {
+            window.location.href = 'login.html?message=' + encodeURIComponent('Please log in to report a hazard');
+            return;
+        }
 
         const typeElement = document.getElementById('crime-type');
         const detailsElement = document.getElementById('crime-details');
@@ -549,6 +683,7 @@ if (crimeForm) {
         try {
             const response = await fetch('/api/crimes', {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
                 },
@@ -563,6 +698,11 @@ if (crimeForm) {
                     severity
                 })
             });
+
+            if (response.status === 401) {
+                window.location.href = 'login.html?message=' + encodeURIComponent('Please log in to report a hazard');
+                return;
+            }
 
             if (!response.ok) {
                 const errorData = await response.json();
@@ -617,6 +757,7 @@ async function getCoordinates(query) {
 }
 
 fetchAndDisplayCrimes();
+checkAuthStatus();
 
 /* ==========================================================================
    SAFETY-AWARE ROUTING & NAVIGATION FEATURE
@@ -768,6 +909,7 @@ if (generateRoutesBtn) {
 
             const response = await fetch('/api/routes', {
                 method: 'POST',
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     source: sourceCoords,

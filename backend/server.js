@@ -1,6 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const path = require('path');
 const cors = require('cors');
@@ -18,10 +20,42 @@ const {
 
 const app = express();
 const PORT = 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'streetsafety_jwt_secret_dev_key_2026';
 
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
+app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
+
+// Helper to sign JWT and set secure cookie
+function setAuthCookie(res, email) {
+  const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '7d' });
+  res.cookie('token', token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 7 * 24 * 60 * 60 * 1000
+  });
+}
+
+// Authentication middleware
+function requireAuth(req, res, next) {
+  const token = req.cookies && req.cookies.token;
+  if (!token) {
+    return res.status(401).json({ error: 'Please log in to continue' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (!decoded || !decoded.email) {
+      return res.status(401).json({ error: 'Please log in to continue' });
+    }
+    req.user = { email: decoded.email };
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Please log in to continue' });
+  }
+}
 
 // Serve landing page at root and index
 app.get(['/', '/index.html', '/landing'], (req, res) => {
@@ -93,6 +127,7 @@ app.post('/api/register', async (req, res) => {
       try {
         const user = new User({ username, email, password });
         await user.save();
+        setAuthCookie(res, email);
         return res.status(201).json({ message: 'User registered' });
       } catch (dbErr) {
         if (dbErr.name === 'MongooseError' || dbErr.name === 'MongoNetworkError') {
@@ -118,6 +153,7 @@ app.post('/api/register', async (req, res) => {
       createdAt: new Date()
     });
 
+    setAuthCookie(res, email);
     return res.status(201).json({ message: 'User registered' });
   } catch (err) {
     res.status(500).json({ error: 'Registration failed: ' + err.message });
@@ -136,7 +172,8 @@ app.post('/api/login', async (req, res) => {
       try {
         const user = await User.findOne({ email });
         if (user && (await user.comparePassword(password))) {
-          return res.status(200).json({ message: 'Login successful', userEmail: user.email });
+          setAuthCookie(res, user.email);
+          return res.status(200).json({ message: 'Login successful' });
         } else if (user) {
           return res.status(401).json({ error: 'Invalid credentials' });
         }
@@ -152,21 +189,36 @@ app.post('/api/login', async (req, res) => {
     if (memUser) {
       const match = await bcrypt.compare(password, memUser.password);
       if (match) {
-        return res.status(200).json({ message: 'Login successful', userEmail: memUser.email });
+        setAuthCookie(res, memUser.email);
+        return res.status(200).json({ message: 'Login successful' });
       } else {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
     }
 
-    // Auto-create/allow demo user in in-memory mode for convenience if needed, or check credentials
     return res.status(401).json({ error: 'Invalid credentials. Please register first.' });
   } catch (err) {
     res.status(500).json({ error: 'Login failed: ' + err.message });
   }
 });
 
-// Submit hazard/crime report
-app.post('/api/crimes', async (req, res) => {
+// Check current session
+app.get('/api/me', requireAuth, (req, res) => {
+  res.status(200).json({ email: req.user.email });
+});
+
+// Logout endpoint
+app.post('/api/logout', (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production'
+  });
+  res.status(200).json({ message: 'Logged out successfully' });
+});
+
+// Submit hazard/crime report (Authenticated)
+app.post('/api/crimes', requireAuth, async (req, res) => {
   try {
     const { type, hazardType, location, details, latitude, longitude, address, severity: reqSeverity } = req.body;
 
@@ -206,10 +258,11 @@ app.post('/api/crimes', async (req, res) => {
       severity: finalSeverity,
       upvotes: 1,
       downvotes: 0,
-      upvotedBy: [],
+      upvotedBy: [req.user.email],
       downvotedBy: [],
       status: 'verified',
       verificationCount: 1,
+      reportedBy: req.user.email,
       createdAt: new Date()
     };
 
@@ -224,7 +277,8 @@ app.post('/api/crimes', async (req, res) => {
           address: address || locText,
           severity: finalSeverity,
           upvotes: 1,
-          downvotes: 0
+          downvotes: 0,
+          upvotedBy: [req.user.email]
         });
         await newCrime.save();
         inMemoryCrimes.unshift(newCrime.toObject());
@@ -245,7 +299,7 @@ app.post('/api/crimes', async (req, res) => {
   }
 });
 
-// Get all crimes, sorted by upvotes
+// Get all crimes, sorted by upvotes (Public)
 app.get('/api/crimes', async (req, res) => {
   try {
     if (isMongoConnected) {
@@ -268,13 +322,10 @@ app.get('/api/crimes', async (req, res) => {
   }
 });
 
-// Upvote a crime
-app.post('/api/crimes/:id/upvote', async (req, res) => {
+// Upvote a crime (Authenticated)
+app.post('/api/crimes/:id/upvote', requireAuth, async (req, res) => {
   try {
-    const { userEmail } = req.body;
-    if (!userEmail) {
-      return res.status(400).json({ message: 'User email required to vote' });
-    }
+    const userEmail = req.user.email;
 
     if (isMongoConnected) {
       try {
@@ -323,13 +374,10 @@ app.post('/api/crimes/:id/upvote', async (req, res) => {
   }
 });
 
-// Downvote a crime
-app.post('/api/crimes/:id/downvote', async (req, res) => {
+// Downvote a crime (Authenticated)
+app.post('/api/crimes/:id/downvote', requireAuth, async (req, res) => {
   try {
-    const { userEmail } = req.body;
-    if (!userEmail) {
-      return res.status(400).json({ message: 'User email required to vote' });
-    }
+    const userEmail = req.user.email;
 
     if (isMongoConnected) {
       try {

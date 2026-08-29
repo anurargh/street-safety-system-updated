@@ -248,6 +248,15 @@
     </footer>
 
     <script>
+        // Check for any query message parameter (e.g. redirected due to unauthenticated write action)
+        const urlParams = new URLSearchParams(window.location.search);
+        const msgParam = urlParams.get('message');
+        if (msgParam) {
+            const loginError = document.getElementById('loginError');
+            loginError.textContent = msgParam;
+            loginError.style.display = 'block';
+        }
+
         document.getElementById('loginForm').addEventListener('submit', async (event) => {
             event.preventDefault();
 
@@ -263,6 +272,7 @@
             try {
                 const response = await fetch('/api/login', {
                     method: 'POST',
+                    credentials: 'include',
                     headers: {
                         'Content-Type': 'application/json'
                     },
@@ -271,7 +281,6 @@
 
                 const data = await response.json();
                 if (response.ok) {
-                    localStorage.setItem('userEmail', data.userEmail || email);
                     window.location.href = 'map.html';
                 } else {
                     loginError.textContent = data.error || 'Authentication rejected. Verify email and password.';
@@ -281,7 +290,7 @@
                 }
             } catch (error) {
                 console.error('Error:', error);
-                loginError.textContent = 'Network communication failure. Operating in local mode.';
+                loginError.textContent = 'Network communication failure. Please check connection.';
                 loginError.style.display = 'block';
                 loginBtn.textContent = 'Authorize Access';
                 loginBtn.disabled = false;
