@@ -31,9 +31,19 @@ map.on('mousemove', (e) => {
 let allCrimes = []; // Global variable to store all crimes
 let currentMarkerMode = 'severity'; // Global marker mode variable ('severity' | 'hazard')
 let currentHazardMarkers = []; // Array of active hazard Leaflet marker objects for fast re-rendering
-let currentUser = null; // Stores authenticated email or null
+let currentUser = localStorage.getItem('authUserEmail') || null; // Stores authenticated email or null
 let lastProximityLat = null;
 let lastProximityLon = null;
+
+// Helper to provide authentication headers with Bearer token if present
+function getAuthHeaders(additional = {}) {
+    const headers = { ...additional };
+    const token = localStorage.getItem('authToken');
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+}
 
 // Reusable Hazard Type to Emoji Mapping
 const HAZARD_EMOJI_MAP = {
@@ -363,6 +373,10 @@ function checkProximityToCrimes(userLat, userLng) {
 
 async function voteCrime(crimeId, voteType) {
     if (!currentUser) {
+        currentUser = localStorage.getItem('authUserEmail');
+    }
+
+    if (!currentUser) {
         window.location.href = 'login.html?message=' + encodeURIComponent('Please log in to vote on hazards');
         return;
     }
@@ -371,9 +385,9 @@ async function voteCrime(crimeId, voteType) {
         const response = await fetch(`/api/crimes/${crimeId}/${voteType}`, {
             method: 'POST',
             credentials: 'include',
-            headers: {
+            headers: getAuthHeaders({
                 'Content-Type': 'application/json'
-            }
+            })
         });
 
         if (response.status === 401) {
@@ -393,7 +407,7 @@ async function voteCrime(crimeId, voteType) {
 }
 
 function fetchAndDisplayCrimes() {
-    fetch('/api/crimes', { credentials: 'include' })
+    fetch('/api/crimes', { credentials: 'include', headers: getAuthHeaders() })
         .then(response => response.json())
         .then(crimes => {
             allCrimes = crimes;
@@ -412,23 +426,39 @@ function fetchAndDisplayCrimes() {
 
 // Authentication status manager
 async function checkAuthStatus() {
+    const storedEmail = localStorage.getItem('authUserEmail');
+    if (storedEmail) {
+        currentUser = storedEmail;
+        updateAuthUI(true, storedEmail);
+    }
+
     try {
         const response = await fetch('/api/me', {
             method: 'GET',
-            credentials: 'include'
+            credentials: 'include',
+            headers: getAuthHeaders()
         });
 
         if (response.ok) {
             const data = await response.json();
             currentUser = data.email;
+            localStorage.setItem('authUserEmail', data.email);
             updateAuthUI(true, data.email);
         } else {
-            currentUser = null;
-            updateAuthUI(false);
+            // Only clear state if server explicitly says unauthorized and no local token was found
+            const token = localStorage.getItem('authToken');
+            if (!token && response.status === 401) {
+                currentUser = null;
+                localStorage.removeItem('authUserEmail');
+                updateAuthUI(false);
+            }
         }
     } catch (err) {
-        currentUser = null;
-        updateAuthUI(false);
+        console.warn('Network issue during auth verification:', err);
+        if (storedEmail) {
+            currentUser = storedEmail;
+            updateAuthUI(true, storedEmail);
+        }
     }
 }
 
@@ -476,11 +506,14 @@ if (authLogoutBtn) {
         try {
             await fetch('/api/logout', {
                 method: 'POST',
-                credentials: 'include'
+                credentials: 'include',
+                headers: getAuthHeaders()
             });
         } catch (e) {
             console.error('Logout error:', e);
         }
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('authUserEmail');
         currentUser = null;
         updateAuthUI(false);
         fetchAndDisplayCrimes();
@@ -587,6 +620,10 @@ function setReportLocation(lat, lon, label) {
 
 function openReportModal() {
     if (!currentUser) {
+        currentUser = localStorage.getItem('authUserEmail');
+    }
+
+    if (!currentUser) {
         window.location.href = 'login.html?message=' + encodeURIComponent('Please log in to report a hazard');
         return;
     }
@@ -635,6 +672,10 @@ if (crimeForm) {
         event.preventDefault();
 
         if (!currentUser) {
+            currentUser = localStorage.getItem('authUserEmail');
+        }
+
+        if (!currentUser) {
             window.location.href = 'login.html?message=' + encodeURIComponent('Please log in to report a hazard');
             return;
         }
@@ -680,13 +721,19 @@ if (crimeForm) {
             }
         }
 
+        const submitBtn = document.getElementById('submitCrimeBtn') || crimeForm.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+        }
+
         try {
             const response = await fetch('/api/crimes', {
                 method: 'POST',
                 credentials: 'include',
-                headers: {
+                headers: getAuthHeaders({
                     'Content-Type': 'application/json'
-                },
+                }),
                 body: JSON.stringify({
                     type,
                     hazardType: type,
@@ -698,6 +745,11 @@ if (crimeForm) {
                     severity
                 })
             });
+
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Report';
+            }
 
             if (response.status === 401) {
                 window.location.href = 'login.html?message=' + encodeURIComponent('Please log in to report a hazard');

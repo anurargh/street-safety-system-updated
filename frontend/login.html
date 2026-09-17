@@ -226,7 +226,14 @@
                     </div>
 
                     <button type="submit" class="auth-submit-btn" id="loginBtn">Authorize Access</button>
+                    <button type="button" class="auth-submit-btn" id="demoLoginBtn" style="background: #1e293b; border-color: #334155; margin-top: 8px;">⚡ Quick Demo Sign-In</button>
                 </form>
+
+                <div style="margin-top: 14px; padding: 10px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 4px; font-size: 0.76rem; color: #475569; font-family: var(--font-mono);">
+                    <strong>DEMO ACCOUNTS:</strong><br>
+                    • Citizen: <code>citizen@mysuru.gov</code> / <code>password123</code><br>
+                    • Officer: <code>officer@mysuru.gov</code> / <code>secure_password123</code>
+                </div>
 
                 <div class="auth-footer-notice">
                     <span>No credential record?</span>
@@ -257,17 +264,15 @@
             loginError.style.display = 'block';
         }
 
-        document.getElementById('loginForm').addEventListener('submit', async (event) => {
-            event.preventDefault();
-
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
+        async function performLogin(email, password) {
             const loginError = document.getElementById('loginError');
             const loginBtn = document.getElementById('loginBtn');
+            const demoLoginBtn = document.getElementById('demoLoginBtn');
 
             loginError.style.display = 'none';
             loginBtn.textContent = 'Verifying Credentials...';
             loginBtn.disabled = true;
+            if (demoLoginBtn) demoLoginBtn.disabled = true;
 
             try {
                 const response = await fetch('/api/login', {
@@ -281,12 +286,18 @@
 
                 const data = await response.json();
                 if (response.ok) {
+                    if (data.token) {
+                        localStorage.setItem('authToken', data.token);
+                    }
+                    const userEmail = (data.user && data.user.email) || email;
+                    localStorage.setItem('authUserEmail', userEmail);
                     window.location.href = 'map.html';
                 } else {
                     loginError.textContent = data.error || 'Authentication rejected. Verify email and password.';
                     loginError.style.display = 'block';
                     loginBtn.textContent = 'Authorize Access';
                     loginBtn.disabled = false;
+                    if (demoLoginBtn) demoLoginBtn.disabled = false;
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -294,7 +305,21 @@
                 loginError.style.display = 'block';
                 loginBtn.textContent = 'Authorize Access';
                 loginBtn.disabled = false;
+                if (demoLoginBtn) demoLoginBtn.disabled = false;
             }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            await performLogin(email, password);
+        });
+
+        document.getElementById('demoLoginBtn').addEventListener('click', async () => {
+            document.getElementById('email').value = 'citizen@mysuru.gov';
+            document.getElementById('password').value = 'password123';
+            await performLogin('citizen@mysuru.gov', 'password123');
         });
     </script>
 </body>

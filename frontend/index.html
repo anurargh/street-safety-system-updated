@@ -27,8 +27,7 @@
             </a>
 
             <ul class="nav-menu">
-                <li><a href="#telemetry" class="nav-link">Telemetry</a></li>
-                <li><a href="#methodology" class="nav-link">Methodology</a></li>
+                <li><a href="#methodology" class="nav-link">Architecture</a></li>
                 <li><a href="#matrix" class="nav-link">Hazard Index</a></li>
                 <li><a href="map.html" class="nav-link" style="color: var(--signal-blue);">Live Map</a></li>
             </ul>
@@ -43,7 +42,7 @@
 
     <main>
         <!-- Hero Wayfinding Section -->
-        <section id="telemetry" class="hero-wayfinding">
+        <section id="overview" class="hero-wayfinding">
             <div class="hero-grid">
                 <div class="hero-main">
                     <div class="hero-label">
@@ -60,69 +59,17 @@
                         <a href="login.html" class="btn-civic btn-civic-solid">Citizen Incident Reporting</a>
                         <a href="#matrix" class="btn-civic btn-civic-outline">Review Hazard Index ↓</a>
                     </div>
-
-                    <!-- Telemetry Data Strip -->
-                    <div class="telemetry-strip">
-                        <div class="telemetry-cell">
-                            <span class="telemetry-num">1,000+</span>
-                            <span class="telemetry-label">Monitored Hazards</span>
-                        </div>
-                        <div class="telemetry-cell">
-                            <span class="telemetry-num">98.4%</span>
-                            <span class="telemetry-label">Verification Rate</span>
-                        </div>
-                        <div class="telemetry-cell">
-                            <span class="telemetry-num">&lt; 120ms</span>
-                            <span class="telemetry-label">Routing Compute</span>
-                        </div>
-                        <div class="telemetry-cell">
-                            <span class="telemetry-num">10-Tier</span>
-                            <span class="telemetry-label">Severity Matrix</span>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Live Signal Board Preview -->
                 <div class="hero-signal-board">
                     <div class="board-header">
-                        <span>Live Signal Feed</span>
+                        <span>Active Hazard Feed</span>
                         <span class="board-live-pill"><span class="board-live-dot"></span> Realtime</span>
                     </div>
-                    <div class="board-body">
-                        <div class="board-item">
-                            <div class="board-icon-box">🚗</div>
-                            <div class="board-info">
-                                <h4>Road Collision Alert</h4>
-                                <p>Near Nazarbad Main Rd • Severity 8/10</p>
-                            </div>
-                            <span class="board-badge badge-critical">Critical</span>
-                        </div>
-
-                        <div class="board-item">
-                            <div class="board-icon-box">🌊</div>
-                            <div class="board-info">
-                                <h4>Severe Waterlogging</h4>
-                                <p>Underpass Low Point • Severity 7/10</p>
-                            </div>
-                            <span class="board-badge badge-warning">High</span>
-                        </div>
-
-                        <div class="board-item">
-                            <div class="board-icon-box">💡</div>
-                            <div class="board-info">
-                                <h4>Streetlight Circuit Outage</h4>
-                                <p>Station Approach Lane • Severity 4/10</p>
-                            </div>
-                            <span class="board-badge badge-caution">Moderate</span>
-                        </div>
-
-                        <div class="board-item">
-                            <div class="board-icon-box">🛡️</div>
-                            <div class="board-info">
-                                <h4>Safe Transit Corridor</h4>
-                                <p>Palace North Boulevard • Active Patrol</p>
-                            </div>
-                            <span class="board-badge badge-safe">Verified</span>
+                    <div class="board-body" id="liveSignalBody">
+                        <div style="padding: 24px; text-align: center; color: var(--color-ink-muted); font-size: 0.85rem; font-family: var(--font-mono);">
+                            Querying civic hazard registry...
                         </div>
                     </div>
                 </div>
@@ -294,5 +241,74 @@
             <span>COORDINATE DATUM: WGS84 // EPSG:4326</span>
         </div>
     </footer>
+
+    <script>
+        (async function() {
+            const container = document.getElementById('liveSignalBody');
+            if (!container) return;
+
+            function escapeHtml(s) {
+                const d = document.createElement('div');
+                d.textContent = s || '';
+                return d.innerHTML;
+            }
+
+            const emojiMap = {
+                "Road Accident": "🚗",
+                "Waterlogging": "🌊",
+                "Pothole": "🕳️",
+                "Broken Streetlight": "💡",
+                "Stray Animals": "🐕",
+                "Dark Area": "🌑",
+                "Suspicious Activity": "⚠️"
+            };
+
+            try {
+                const res = await fetch('/api/crimes');
+                if (!res.ok) throw new Error('Network error');
+                const crimes = await res.json();
+
+                if (!Array.isArray(crimes) || crimes.length === 0) {
+                    container.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--color-ink-muted); font-size: 0.85rem;">No active hazards registered in database. Use the map to report a community hazard.</div>';
+                    return;
+                }
+
+                // Show the most recent 4 real reports
+                const recent = crimes.slice(-4).reverse();
+                container.innerHTML = recent.map(c => {
+                    const type = c.type || c.hazardType || 'Hazard';
+                    const icon = emojiMap[type] || '⚠️';
+                    const loc = c.location || c.address || 'Reported Zone';
+                    const sev = Number(c.severity) || 5;
+
+                    let badgeClass = 'badge-caution';
+                    let badgeText = 'Moderate';
+                    if (sev >= 8) {
+                        badgeClass = 'badge-critical';
+                        badgeText = 'Critical';
+                    } else if (sev >= 6) {
+                        badgeClass = 'badge-warning';
+                        badgeText = 'High';
+                    } else if (sev <= 2) {
+                        badgeClass = 'badge-safe';
+                        badgeText = 'Low';
+                    }
+
+                    return `
+                        <div class="board-item">
+                            <div class="board-icon-box">${icon}</div>
+                            <div class="board-info">
+                                <h4>${escapeHtml(type)}</h4>
+                                <p>${escapeHtml(loc)} • Severity ${sev}/10</p>
+                            </div>
+                            <span class="board-badge ${badgeClass}">${badgeText}</span>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                container.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--color-ink-muted); font-size: 0.85rem;">Connect to interactive map to review live incidents.</div>';
+            }
+        })();
+    </script>
 </body>
 </html>

@@ -274,11 +274,16 @@
                 const data = await response.json();
 
                 if (response.ok) {
+                    if (data.token) {
+                        localStorage.setItem('authToken', data.token);
+                    }
+                    const userEmail = (data.user && data.user.email) || email;
+                    localStorage.setItem('authUserEmail', userEmail);
                     registerSuccess.textContent = data.message || 'Registration completed successfully. Initializing authorized terminal...';
                     registerSuccess.style.display = 'block';
                     setTimeout(() => {
                         window.location.href = 'map.html';
-                    }, 1200);
+                    }, 1000);
                 } else {
                     registerError.textContent = data.error || 'Registration failed. Please check inputs.';
                     registerError.style.display = 'block';

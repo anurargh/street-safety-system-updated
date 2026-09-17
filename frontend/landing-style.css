@@ -308,44 +308,6 @@ header.civic-header {
     font-size: 0.95rem;
 }
 
-/* Telemetry Metric Strip */
-.telemetry-strip {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    border: 1px solid var(--color-border-grid);
-    background: var(--color-bg-surface);
-    border-radius: var(--radius-sm);
-    margin-top: 16px;
-}
-
-.telemetry-cell {
-    padding: 16px 18px;
-    border-right: 1px solid var(--color-border-grid);
-    display: flex;
-    flex-direction: column;
-}
-
-.telemetry-cell:last-child {
-    border-right: none;
-}
-
-.telemetry-num {
-    font-family: var(--font-mono);
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--color-ink-primary);
-    line-height: 1.1;
-    margin-bottom: 4px;
-}
-
-.telemetry-label {
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: var(--color-ink-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
 /* Wayfinding Signal Board (Right Hero column) */
 .hero-signal-board {
     background: var(--color-bg-surface);
@@ -718,15 +680,6 @@ footer.civic-footer {
     }
     .hero-title {
         font-size: 2.2rem;
-    }
-    .telemetry-strip {
-        grid-template-columns: 1fr 1fr;
-    }
-    .telemetry-cell:nth-child(2) {
-        border-right: none;
-    }
-    .telemetry-cell:nth-child(1), .telemetry-cell:nth-child(2) {
-        border-bottom: 1px solid var(--color-border-grid);
     }
     .footer-inner {
         grid-template-columns: 1fr;
