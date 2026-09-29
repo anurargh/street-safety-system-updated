@@ -19,7 +19,7 @@ const {
 } = require('./config/hazard-config');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'streetsafety_jwt_secret_dev_key_2026';
 
 app.use(cors({ origin: true, credentials: true, allowedHeaders: ['Content-Type', 'Authorization'] }));
