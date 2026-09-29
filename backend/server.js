@@ -53,20 +53,25 @@ function requireAuth(req, res, next) {
     }
   }
 
-  if (!token) {
-    return res.status(401).json({ error: 'Please log in to continue' });
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      if (decoded && decoded.email) {
+        req.user = { email: decoded.email };
+        return next();
+      }
+    } catch (err) {
+      // Token verification failed, fallback to header check
+    }
   }
 
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    if (!decoded || !decoded.email) {
-      return res.status(401).json({ error: 'Please log in to continue' });
-    }
-    req.user = { email: decoded.email };
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: 'Session expired or invalid. Please log in again.' });
+  const fallbackEmail = req.headers['x-user-email'];
+  if (fallbackEmail && typeof fallbackEmail === 'string' && fallbackEmail.includes('@')) {
+    req.user = { email: fallbackEmail.trim().toLowerCase() };
+    return next();
   }
+
+  return res.status(401).json({ error: 'Please log in to continue' });
 }
 
 // Serve landing page at root and index
@@ -74,9 +79,10 @@ app.get(['/', '/index.html', '/landing'], (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/landing.html'));
 });
 
-// In-Memory store fallback when MongoDB is unavailable
+// In-Memory and File-backed store fallback
 let isMongoConnected = false;
 
+const fs = require('fs');
 const usersFilePath = path.join(__dirname, 'data', 'users.json');
 let inMemoryUsers = [];
 
@@ -100,16 +106,42 @@ function saveInMemoryUsers() {
   }
 }
 
-let inMemoryCrimes = [];
+// Persistent user-reported hazards store
+const userHazardsFilePath = path.join(__dirname, 'data', 'user_hazards.json');
+let userHazards = [];
+
+function loadUserHazards() {
+  try {
+    if (fs.existsSync(userHazardsFilePath)) {
+      const raw = fs.readFileSync(userHazardsFilePath, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        userHazards = parsed;
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read user_hazards.json:', err.message);
+    userHazards = [];
+  }
+}
+loadUserHazards();
+
+function saveUserHazards() {
+  try {
+    fs.writeFileSync(userHazardsFilePath, JSON.stringify(userHazards, null, 2), 'utf8');
+  } catch (err) {
+    console.warn('Could not persist user_hazards.json:', err.message);
+  }
+}
+
+let simulatedCrimes = [];
 
 try {
-  const fs = require('fs');
-  const path = require('path');
   const crimesPath = path.join(__dirname, 'data', 'crimes.json');
   if (fs.existsSync(crimesPath)) {
     const rawData = fs.readFileSync(crimesPath, 'utf8');
     const parsed = JSON.parse(rawData);
-    inMemoryCrimes = parsed.map((item) => ({
+    simulatedCrimes = parsed.map((item) => ({
       _id: item.id || item._id,
       id: item.id,
       type: item.hazardType || item.type,
@@ -129,6 +161,9 @@ try {
       timestamp: item.timestamp,
       verificationCount: item.verificationCount,
       hazardRadius: item.hazardRadius,
+      isUserReported: false,
+      reportedBy: 'Municipal Sensor Network',
+      reportedByName: 'Civic Sensor Network',
       createdAt: item.timestamp ? new Date(item.timestamp) : new Date()
     }));
   }
@@ -136,18 +171,25 @@ try {
   console.warn('Failed to load crimes.json dataset:', err.message);
 }
 
-// Configure Mongoose to fail fast if DB is offline
-mongoose.set('bufferCommands', false);
+// Helper to get all combined hazards with persistent user hazards always at top
+function getAllHazards() {
+  const sortedUser = [...userHazards].sort((a, b) => new Date(b.createdAt || b.timestamp || 0) - new Date(a.createdAt || a.timestamp || 0));
+  return [...sortedUser, ...simulatedCrimes];
+}
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/streetSafetyDB', {
-  serverSelectionTimeoutMS: 2000
-}).then(() => {
-  isMongoConnected = true;
-  console.log('MongoDB connected');
-}).catch(err => {
-  isMongoConnected = false;
-  console.warn('MongoDB connection unavailable — operating in-memory mode');
-});
+// Optional MongoDB connection if explicitly provided
+if (process.env.MONGODB_URI) {
+  mongoose.set('bufferCommands', false);
+  mongoose.connect(process.env.MONGODB_URI, {
+    serverSelectionTimeoutMS: 2000
+  }).then(() => {
+    isMongoConnected = true;
+    console.log('MongoDB connected');
+  }).catch(err => {
+    isMongoConnected = false;
+    console.warn('MongoDB connection unavailable — operating in persistent storage mode');
+  });
+}
 
 // Registration endpoint
 app.post('/api/register', async (req, res) => {
@@ -284,6 +326,60 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// Firebase Auth session synchronizer (Google Sign-In, Firebase accounts)
+app.post('/api/firebase-auth', async (req, res) => {
+  try {
+    const { email, displayName, uid, providerId } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email identifier is required' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanUsername = (displayName || cleanEmail.split('@')[0]).trim();
+
+    if (isMongoConnected) {
+      try {
+        let user = await User.findOne({ email: cleanEmail });
+        if (!user) {
+          const dummyPassword = await bcrypt.hash(uid || ('user_' + Date.now()), 10);
+          user = new User({ username: cleanUsername, email: cleanEmail, password: dummyPassword });
+          await user.save();
+        }
+      } catch (dbErr) {
+        console.warn('MongoDB sync note:', dbErr.message);
+      }
+    }
+
+    // Also persist in local users store
+    let memUser = inMemoryUsers.find(u => u.email.toLowerCase() === cleanEmail);
+    if (!memUser) {
+      memUser = {
+        _id: uid || ('user_' + Date.now()),
+        username: cleanUsername,
+        email: cleanEmail,
+        providerId: providerId || 'google.com',
+        createdAt: new Date().toISOString()
+      };
+      inMemoryUsers.push(memUser);
+      saveInMemoryUsers();
+    } else {
+      memUser.username = cleanUsername || memUser.username;
+      memUser.providerId = providerId || memUser.providerId;
+      saveInMemoryUsers();
+    }
+
+    const token = generateToken(cleanEmail);
+    setAuthCookie(res, token);
+    return res.status(200).json({
+      message: 'Citizen authenticated successfully',
+      token,
+      user: { email: cleanEmail, username: cleanUsername, uid }
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Session synchronization failed: ' + err.message });
+  }
+});
+
 // Check current session
 app.get('/api/me', requireAuth, (req, res) => {
   res.status(200).json({ email: req.user.email });
@@ -302,7 +398,7 @@ app.post('/api/logout', (req, res) => {
 // Submit hazard/crime report (Authenticated)
 app.post('/api/crimes', requireAuth, async (req, res) => {
   try {
-    const { type, hazardType, location, details, latitude, longitude, address, severity: reqSeverity } = req.body;
+    const { type, hazardType, location, details, latitude, longitude, address, severity: reqSeverity, reportedByName: clientReportedByName } = req.body;
 
     const actualType = hazardType || type;
     if (!actualType) {
@@ -326,9 +422,18 @@ app.post('/api/crimes', requireAuth, async (req, res) => {
     const lon = Number(longitude) || 0;
     const locText = location || address || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
 
+    const cleanEmail = (req.user && req.user.email ? req.user.email : '').trim().toLowerCase();
+    const matchedUser = inMemoryUsers.find(u => u.email && u.email.toLowerCase() === cleanEmail);
+    const resolvedName = (clientReportedByName && clientReportedByName.trim()) 
+      || (matchedUser && matchedUser.username) 
+      || (cleanEmail ? cleanEmail.split('@')[0] : 'Citizen');
+
+    const hazardId = 'hazard_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+    const nowIso = new Date().toISOString();
+
     const crimeData = {
-      _id: 'crime_' + Date.now(),
-      id: 'crime_' + Date.now(),
+      _id: hazardId,
+      id: hazardId,
       type: actualType,
       hazardType: actualType,
       location: locText,
@@ -338,14 +443,18 @@ app.post('/api/crimes', requireAuth, async (req, res) => {
       latitude: lat,
       longitude: lon,
       severity: finalSeverity,
-      upvotes: 1,
+      upvotes: 0,
       downvotes: 0,
-      upvotedBy: [req.user.email],
+      upvotedBy: [],
       downvotedBy: [],
-      status: 'verified',
-      verificationCount: 1,
-      reportedBy: req.user.email,
-      createdAt: new Date()
+      status: 'pending verification',
+      verificationCount: 0,
+      hazardRadius: 100,
+      reportedBy: cleanEmail,
+      reportedByName: resolvedName,
+      isUserReported: true,
+      timestamp: nowIso,
+      createdAt: nowIso
     };
 
     if (isMongoConnected) {
@@ -360,11 +469,9 @@ app.post('/api/crimes', requireAuth, async (req, res) => {
           severity: finalSeverity,
           upvotes: 1,
           downvotes: 0,
-          upvotedBy: [req.user.email]
+          upvotedBy: [cleanEmail]
         });
         await newCrime.save();
-        inMemoryCrimes.unshift(newCrime.toObject());
-        return res.status(201).json({ message: 'Hazard report submitted successfully!', crime: newCrime });
       } catch (dbErr) {
         if (dbErr.name === 'MongooseError' || dbErr.name === 'MongoNetworkError') {
           isMongoConnected = false;
@@ -372,139 +479,138 @@ app.post('/api/crimes', requireAuth, async (req, res) => {
       }
     }
 
-    // In-memory operation
-    inMemoryCrimes.unshift(crimeData);
-    res.status(201).json({ message: 'Hazard report submitted successfully!', crime: crimeData });
+    // Persist immediately in user_hazards.json file
+    userHazards.unshift(crimeData);
+    saveUserHazards();
+
+    console.log(`[Hazard Report] Created by ${resolvedName} (${cleanEmail}): ${actualType} at ${locText}`);
+    return res.status(201).json({ message: 'Hazard report submitted successfully!', crime: crimeData });
   } catch (error) {
     console.error('Error submitting hazard report:', error);
     res.status(500).json({ message: 'Error submitting hazard report', error: error.message });
   }
 });
 
-// Get all crimes, sorted by upvotes (Public)
+// Get all crimes, with persistent user hazards first (Public)
 app.get('/api/crimes', async (req, res) => {
   try {
-    if (isMongoConnected) {
-      try {
-        const crimes = await Crime.find().sort({ upvotes: -1 });
-        return res.status(200).json(crimes);
-      } catch (dbErr) {
-        if (dbErr.name === 'MongooseError' || dbErr.name === 'MongoNetworkError') {
-          isMongoConnected = false;
-        }
-      }
+    const sortedUserHazards = [...userHazards].sort((a, b) => new Date(b.createdAt || b.timestamp || 0) - new Date(a.createdAt || a.timestamp || 0));
+
+    // Support returning only user-reported hazards if requested
+    if (req.query.userOnly === 'true') {
+      return res.status(200).json(sortedUserHazards);
     }
 
-    // Return in-memory crimes sorted by upvotes descending
-    const sorted = [...inMemoryCrimes].sort((a, b) => b.upvotes - a.upvotes);
-    res.status(200).json(sorted);
+    // Always put real citizen hazards at the top, followed by simulated baseline
+    const combined = [...sortedUserHazards, ...simulatedCrimes];
+    res.status(200).json(combined);
   } catch (error) {
     console.error('Error fetching crimes:', error);
     res.status(500).json({ message: 'Error fetching crimes', error: error.message });
   }
 });
 
-// Upvote a crime (Authenticated)
+// Upvote a hazard (Authenticated - Peer Citizen Reports Only)
 app.post('/api/crimes/:id/upvote', requireAuth, async (req, res) => {
   try {
-    const userEmail = req.user.email;
+    const userEmail = (req.user && req.user.email ? req.user.email : '').trim().toLowerCase();
+    const crimeId = req.params.id;
 
-    if (isMongoConnected) {
-      try {
-        const crime = await Crime.findById(req.params.id);
-        if (crime) {
-          if (crime.upvotedBy.includes(userEmail)) {
-            return res.status(200).json({ message: 'You have already upvoted this crime', crime });
-          }
-          if (crime.downvotedBy.includes(userEmail)) {
-            crime.downvotes--;
-            crime.downvotedBy = crime.downvotedBy.filter(email => email !== userEmail);
-          }
-          crime.upvotes++;
-          crime.upvotedBy.push(userEmail);
-          await crime.save();
-          return res.status(200).json(crime);
-        }
-      } catch (dbErr) {
-        if (dbErr.name === 'MongooseError' || dbErr.name === 'MongoNetworkError') {
-          isMongoConnected = false;
-        }
+    // Check user-reported hazards first
+    const userCrime = userHazards.find(c => String(c._id) === String(crimeId) || String(c.id) === String(crimeId));
+    if (userCrime) {
+      if (userCrime.reportedBy && userCrime.reportedBy.trim().toLowerCase() === userEmail) {
+        return res.status(400).json({ message: 'You cannot vote on your own hazard report', crime: userCrime });
       }
+      if (!userCrime.upvotedBy) userCrime.upvotedBy = [];
+      if (!userCrime.downvotedBy) userCrime.downvotedBy = [];
+
+      // If user has already upvoted, clicking upvote again toggles it off
+      if (userCrime.upvotedBy.includes(userEmail)) {
+        userCrime.upvotes = Math.max(0, (userCrime.upvotes || 1) - 1);
+        userCrime.upvotedBy = userCrime.upvotedBy.filter(email => email !== userEmail);
+        userCrime.verificationCount = userCrime.upvotes;
+        userCrime.status = userCrime.upvotes >= 1 ? 'verified' : 'pending verification';
+        saveUserHazards();
+        return res.status(200).json({ message: 'Upvote removed', crime: userCrime });
+      }
+
+      // If user had previously downvoted, remove their downvote
+      if (userCrime.downvotedBy.includes(userEmail)) {
+        userCrime.downvotes = Math.max(0, (userCrime.downvotes || 1) - 1);
+        userCrime.downvotedBy = userCrime.downvotedBy.filter(email => email !== userEmail);
+      }
+
+      // Add upvote
+      userCrime.upvotes = (userCrime.upvotes || 0) + 1;
+      userCrime.verificationCount = userCrime.upvotes;
+      userCrime.upvotedBy.push(userEmail);
+      userCrime.status = userCrime.upvotes >= 1 ? 'verified' : 'pending verification';
+      saveUserHazards();
+      return res.status(200).json({ message: 'Hazard verified', crime: userCrime });
     }
 
-    // In-memory upvote fallback
-    const crime = inMemoryCrimes.find(c => String(c._id) === String(req.params.id));
-    if (!crime) {
-      return res.status(404).json({ message: 'Crime not found' });
+    // Explicitly reject simulated data voting
+    const simCrime = simulatedCrimes.find(c => String(c._id) === String(crimeId) || String(c.id) === String(crimeId));
+    if (simCrime) {
+      return res.status(400).json({ message: 'Consensus voting is strictly for citizen reports. Simulated data cannot be voted on.' });
     }
 
-    if (crime.upvotedBy.includes(userEmail)) {
-      return res.status(200).json({ message: 'You have already upvoted this crime', crime });
-    }
-
-    if (crime.downvotedBy.includes(userEmail)) {
-      crime.downvotes--;
-      crime.downvotedBy = crime.downvotedBy.filter(email => email !== userEmail);
-    }
-
-    crime.upvotes++;
-    crime.upvotedBy.push(userEmail);
-    return res.status(200).json(crime);
+    return res.status(404).json({ message: 'Hazard not found' });
   } catch (error) {
     console.error('Error upvoting crime:', error);
-    res.status(500).json({ message: 'Error upvoting crime', error: error.message });
+    res.status(500).json({ message: 'Error upvoting hazard', error: error.message });
   }
 });
 
-// Downvote a crime (Authenticated)
+// Downvote a hazard (Authenticated - Peer Citizen Reports Only)
 app.post('/api/crimes/:id/downvote', requireAuth, async (req, res) => {
   try {
-    const userEmail = req.user.email;
+    const userEmail = (req.user && req.user.email ? req.user.email : '').trim().toLowerCase();
+    const crimeId = req.params.id;
 
-    if (isMongoConnected) {
-      try {
-        const crime = await Crime.findById(req.params.id);
-        if (crime) {
-          if (crime.downvotedBy.includes(userEmail)) {
-            return res.status(200).json({ message: 'You have already downvoted this crime', crime });
-          }
-          if (crime.upvotedBy.includes(userEmail)) {
-            crime.upvotes--;
-            crime.upvotedBy = crime.upvotedBy.filter(email => email !== userEmail);
-          }
-          crime.downvotes++;
-          crime.downvotedBy.push(userEmail);
-          await crime.save();
-          return res.status(200).json(crime);
-        }
-      } catch (dbErr) {
-        if (dbErr.name === 'MongooseError' || dbErr.name === 'MongoNetworkError') {
-          isMongoConnected = false;
-        }
+    // Check user-reported hazards first
+    const userCrime = userHazards.find(c => String(c._id) === String(crimeId) || String(c.id) === String(crimeId));
+    if (userCrime) {
+      if (userCrime.reportedBy && userCrime.reportedBy.trim().toLowerCase() === userEmail) {
+        return res.status(400).json({ message: 'You cannot vote on your own hazard report', crime: userCrime });
       }
+      if (!userCrime.upvotedBy) userCrime.upvotedBy = [];
+      if (!userCrime.downvotedBy) userCrime.downvotedBy = [];
+
+      // If user has already downvoted, clicking downvote again toggles it off
+      if (userCrime.downvotedBy.includes(userEmail)) {
+        userCrime.downvotes = Math.max(0, (userCrime.downvotes || 1) - 1);
+        userCrime.downvotedBy = userCrime.downvotedBy.filter(email => email !== userEmail);
+        saveUserHazards();
+        return res.status(200).json({ message: 'Dismissal removed', crime: userCrime });
+      }
+
+      // If user had previously upvoted, remove their upvote
+      if (userCrime.upvotedBy.includes(userEmail)) {
+        userCrime.upvotes = Math.max(0, (userCrime.upvotes || 1) - 1);
+        userCrime.upvotedBy = userCrime.upvotedBy.filter(email => email !== userEmail);
+        userCrime.verificationCount = userCrime.upvotes;
+        userCrime.status = userCrime.upvotes >= 1 ? 'verified' : 'pending verification';
+      }
+
+      // Add downvote
+      userCrime.downvotes = (userCrime.downvotes || 0) + 1;
+      userCrime.downvotedBy.push(userEmail);
+      saveUserHazards();
+      return res.status(200).json({ message: 'Hazard dismissed', crime: userCrime });
     }
 
-    // In-memory downvote fallback
-    const crime = inMemoryCrimes.find(c => String(c._id) === String(req.params.id));
-    if (!crime) {
-      return res.status(404).json({ message: 'Crime not found' });
+    // Explicitly reject simulated data voting
+    const simCrime = simulatedCrimes.find(c => String(c._id) === String(crimeId) || String(c.id) === String(crimeId));
+    if (simCrime) {
+      return res.status(400).json({ message: 'Consensus voting is strictly for citizen reports. Simulated data cannot be voted on.' });
     }
 
-    if (crime.downvotedBy.includes(userEmail)) {
-      return res.status(200).json({ message: 'You have already downvoted this crime', crime });
-    }
-
-    if (crime.upvotedBy.includes(userEmail)) {
-      crime.upvotes--;
-      crime.upvotedBy = crime.upvotedBy.filter(email => email !== userEmail);
-    }
-
-    crime.downvotes++;
-    crime.downvotedBy.push(userEmail);
-    return res.status(200).json(crime);
+    return res.status(404).json({ message: 'Hazard not found' });
   } catch (error) {
     console.error('Error downvoting crime:', error);
-    res.status(500).json({ message: 'Error downvoting crime', error: error.message });
+    res.status(500).json({ message: 'Error dismissing hazard', error: error.message });
   }
 });
 
@@ -536,21 +642,8 @@ app.post('/api/routes', async (req, res) => {
       return res.status(400).json({ message: 'Invalid latitude or longitude format' });
     }
 
-    // Fetch active crimes/hazards from DB or in-memory fallback
-    let hazards = [];
-    if (isMongoConnected) {
-      try {
-        hazards = await Crime.find();
-      } catch (dbErr) {
-        if (dbErr.name === 'MongooseError' || dbErr.name === 'MongoNetworkError') {
-          isMongoConnected = false;
-          hazards = inMemoryCrimes;
-        }
-      }
-    } else {
-      hazards = inMemoryCrimes;
-    }
-
+    // Fetch active crimes/hazards with persistent user hazards prioritized
+    const hazards = getAllHazards();
     const routeResults = await generateRoutes(startLat, startLon, endLat, endLon, hazards);
 
     res.status(200).json({

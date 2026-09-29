@@ -89,7 +89,7 @@ async function snapToNearestRoad(lat, lon) {
 }
 
 /**
- * Fetch real driving route polylines from OSRM
+ * Fetch real driving route polylines and steps from OSRM
  */
 async function fetchOSRMRoute(startLat, startLon, endLat, endLon, viaLat = null, viaLon = null) {
   try {
@@ -112,12 +112,244 @@ async function fetchOSRMRoute(startLat, startLon, endLat, endLon, viaLat = null,
 
     return data.routes.map(r => {
       // Convert OSRM [lon, lat] coordinates to [lat, lon]
-      return r.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+      return {
+        coordinates: r.geometry.coordinates.map(coord => [coord[1], coord[0]]),
+        distance: r.distance,
+        duration: r.duration,
+        steps: r.legs && r.legs[0] && r.legs[0].steps ? r.legs[0].steps : []
+      };
     });
   } catch (err) {
     console.warn('OSRM route fetch failed:', err.message);
     return [];
   }
+}
+
+function calculateBearing(lat1, lon1, lat2, lon2) {
+  const toRad = deg => (deg * Math.PI) / 180;
+  const toDeg = rad => (rad * 180) / Math.PI;
+  const φ1 = toRad(lat1), φ2 = toRad(lat2);
+  const Δλ = toRad(lon2 - lon1);
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  return (toDeg(Math.atan2(y, x)) + 360) % 360;
+}
+
+function getCardinalDirection(bearing) {
+  const dirs = ['North', 'Northeast', 'East', 'Southeast', 'South', 'Southwest', 'West', 'Northwest'];
+  return dirs[Math.round(bearing / 45) % 8];
+}
+
+function findNearbyStreetName(lat, lon, osrmSteps = []) {
+  if (!osrmSteps || osrmSteps.length === 0) return null;
+  let bestDist = 0.08; // 80 meters
+  let bestName = null;
+  for (const step of osrmSteps) {
+    if (step.name && step.name.trim() !== '' && step.maneuver && step.maneuver.location) {
+      const sLon = step.maneuver.location[0];
+      const sLat = step.maneuver.location[1];
+      const dKm = calculateDistanceKm(lat, lon, sLat, sLon);
+      if (dKm < bestDist) {
+        bestDist = dKm;
+        bestName = step.name.trim();
+      }
+    }
+  }
+  return bestName;
+}
+
+function findNearbyHazard(lat, lon, hazards = [], maxRadiusMeters = 80) {
+  if (!hazards || hazards.length === 0) return null;
+  for (const h of hazards) {
+    const hLat = Number(h.latitude || h.lat);
+    const hLon = Number(h.longitude || h.lon || h.lng);
+    if (!isNaN(hLat) && !isNaN(hLon)) {
+      const distM = calculateDistanceKm(lat, lon, hLat, hLon) * 1000;
+      if (distM <= maxRadiusMeters) {
+        return {
+          type: h.type || h.hazardType || 'Hazard',
+          severity: Number(h.severity) || 5,
+          location: h.location || h.address || '',
+          distanceMeters: Math.round(distM)
+        };
+      }
+    }
+  }
+  return null;
+}
+
+function buildTurnByTurnSteps(coords, hazards = [], osrmSteps = []) {
+  if (!coords || coords.length < 2) return [];
+  const steps = [];
+
+  const initialBearing = calculateBearing(coords[0][0], coords[0][1], coords[1][0], coords[1][1]);
+  const initialDir = getCardinalDirection(initialBearing);
+  const initialStreet = findNearbyStreetName(coords[0][0], coords[0][1], osrmSteps);
+  const initialStreetText = initialStreet ? ` on ${initialStreet}` : '';
+
+  let currentStep = {
+    stepIndex: 0,
+    maneuver: 'depart',
+    modifier: 'straight',
+    instruction: `Head ${initialDir}${initialStreetText}`,
+    shortInstruction: `Head ${initialDir}`,
+    streetName: initialStreet || '',
+    location: coords[0],
+    coordIndex: 0,
+    distanceMeters: 0,
+    durationSeconds: 0,
+    bearing: initialBearing,
+    hazardAlert: findNearbyHazard(coords[0][0], coords[0][1], hazards, 70)
+  };
+
+  let prevBearing = initialBearing;
+  let accumulatedDistMeters = 0;
+
+  for (let i = 1; i < coords.length - 1; i++) {
+    const segDistKm = calculateDistanceKm(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]);
+    const segDistMeters = Math.round(segDistKm * 1000);
+    accumulatedDistMeters += segDistMeters;
+
+    const nextBearing = calculateBearing(coords[i][0], coords[i][1], coords[i + 1][0], coords[i + 1][1]);
+    let diff = (nextBearing - prevBearing + 360) % 360;
+    if (diff > 180) diff -= 360;
+
+    // Detect turn if turn angle is significant (>= 28 degrees) AND distance since last maneuver is at least 35m
+    if (Math.abs(diff) >= 28 && accumulatedDistMeters >= 35) {
+      currentStep.distanceMeters = accumulatedDistMeters;
+      currentStep.durationSeconds = Math.max(2, Math.round((accumulatedDistMeters / 1000) / 30 * 3600));
+      steps.push(currentStep);
+
+      let maneuver = 'turn-right';
+      let modifier = 'right';
+      let text = 'Turn right';
+      let shortText = 'Turn right';
+
+      if (diff > 20 && diff <= 50) {
+        maneuver = 'slight-right';
+        modifier = 'slight right';
+        text = 'Bear slightly right';
+        shortText = 'Bear right';
+      } else if (diff > 50 && diff <= 125) {
+        maneuver = 'turn-right';
+        modifier = 'right';
+        text = 'Turn right';
+        shortText = 'Turn right';
+      } else if (diff > 125) {
+        maneuver = 'sharp-right';
+        modifier = 'sharp right';
+        text = 'Make a sharp right';
+        shortText = 'Sharp right';
+      } else if (diff < -20 && diff >= -50) {
+        maneuver = 'slight-left';
+        modifier = 'slight left';
+        text = 'Bear slightly left';
+        shortText = 'Bear left';
+      } else if (diff < -50 && diff >= -125) {
+        maneuver = 'turn-left';
+        modifier = 'left';
+        text = 'Turn left';
+        shortText = 'Turn left';
+      } else if (diff < -125) {
+        maneuver = 'sharp-left';
+        modifier = 'sharp left';
+        text = 'Make a sharp left';
+        shortText = 'Sharp left';
+      }
+
+      const turnStreet = findNearbyStreetName(coords[i][0], coords[i][1], osrmSteps);
+      if (turnStreet) {
+        text += ` onto ${turnStreet}`;
+      }
+
+      const stepHazard = findNearbyHazard(coords[i][0], coords[i][1], hazards, 80);
+
+      currentStep = {
+        stepIndex: steps.length,
+        maneuver,
+        modifier,
+        instruction: text,
+        shortInstruction: shortText,
+        streetName: turnStreet || '',
+        location: coords[i],
+        coordIndex: i,
+        distanceMeters: 0,
+        durationSeconds: 0,
+        bearing: nextBearing,
+        hazardAlert: stepHazard
+      };
+
+      prevBearing = nextBearing;
+      accumulatedDistMeters = 0;
+    }
+  }
+
+  // Final stretch to destination
+  const lastSegKm = calculateDistanceKm(coords[coords.length - 2][0], coords[coords.length - 2][1], coords[coords.length - 1][0], coords[coords.length - 1][1]);
+  accumulatedDistMeters += Math.round(lastSegKm * 1000);
+  currentStep.distanceMeters = Math.max(10, accumulatedDistMeters);
+  currentStep.durationSeconds = Math.max(2, Math.round((currentStep.distanceMeters / 1000) / 30 * 3600));
+  steps.push(currentStep);
+
+  // Arrival step
+  const finalDestStreet = findNearbyStreetName(coords[coords.length - 1][0], coords[coords.length - 1][1], osrmSteps);
+  steps.push({
+    stepIndex: steps.length,
+    maneuver: 'arrive',
+    modifier: 'straight',
+    instruction: finalDestStreet ? `Arrive at destination near ${finalDestStreet}` : 'You have arrived at your destination',
+    shortInstruction: 'Arrive at destination',
+    streetName: finalDestStreet || '',
+    location: coords[coords.length - 1],
+    coordIndex: coords.length - 1,
+    distanceMeters: 0,
+    durationSeconds: 0,
+    bearing: prevBearing,
+    hazardAlert: null
+  });
+
+  return steps;
+}
+
+function findUpcomingHazardsAlongRoute(coords, hazards = [], maxDistMeters = 70) {
+  if (!hazards || hazards.length === 0 || !coords || coords.length === 0) return [];
+  const found = [];
+  const seenIds = new Set();
+
+  let accumulatedDistMeters = 0;
+  for (let i = 0; i < coords.length - 1; i++) {
+    const p1 = coords[i];
+    const p2 = coords[i + 1];
+    const segDistMeters = calculateDistanceKm(p1[0], p1[1], p2[0], p2[1]) * 1000;
+
+    for (const h of hazards) {
+      const id = String(h._id || h.id || `${h.latitude},${h.longitude}`);
+      if (seenIds.has(id)) continue;
+
+      const hLat = Number(h.latitude || h.lat);
+      const hLon = Number(h.longitude || h.lon || h.lng);
+      if (isNaN(hLat) || isNaN(hLon)) continue;
+
+      const d1 = calculateDistanceKm(p1[0], p1[1], hLat, hLon) * 1000;
+      const d2 = calculateDistanceKm(p2[0], p2[1], hLat, hLon) * 1000;
+      const minD = Math.min(d1, d2);
+
+      if (minD <= maxDistMeters) {
+        seenIds.add(id);
+        found.push({
+          id,
+          type: h.type || h.hazardType || 'Hazard',
+          severity: Number(h.severity) || 5,
+          location: h.location || h.address || '',
+          distanceAlongRouteMeters: Math.round(accumulatedDistMeters + minD),
+          coordinates: [hLat, hLon]
+        });
+      }
+    }
+    accumulatedDistMeters += segDistMeters;
+  }
+
+  return found.sort((a, b) => a.distanceAlongRouteMeters - b.distanceAlongRouteMeters);
 }
 
 /**
@@ -234,10 +466,16 @@ async function generateRoutes(startLat, startLon, endLat, endLon, hazards = []) 
   const realEndLon = snappedEnd[1];
 
   const candidatePaths = [];
+  const allOsrmSteps = [];
 
   // 1. Fetch direct OSRM real street routes
   const directRoutes = await fetchOSRMRoute(realStartLat, realStartLon, realEndLat, realEndLon);
-  candidatePaths.push(...directRoutes);
+  directRoutes.forEach(r => {
+    if (r && r.coordinates && r.coordinates.length > 0) {
+      candidatePaths.push(r.coordinates);
+      if (r.steps && r.steps.length > 0) allOsrmSteps.push(...r.steps);
+    }
+  });
 
   // 2. Generate lateral detour waypoints on real streets around hazard areas
   const dLat = realEndLat - realStartLat;
@@ -269,12 +507,26 @@ async function generateRoutes(startLat, startLon, endLat, endLon, hazards = []) 
   });
 
   const detourResults = await Promise.all(detourPromises);
-  detourResults.forEach(routes => candidatePaths.push(...routes));
+  detourResults.forEach(routes => {
+    if (Array.isArray(routes)) {
+      routes.forEach(r => {
+        if (r && r.coordinates && r.coordinates.length > 0) {
+          candidatePaths.push(r.coordinates);
+          if (r.steps && r.steps.length > 0) allOsrmSteps.push(...r.steps);
+        }
+      });
+    }
+  });
 
   // If no OSRM routes were returned, retry direct OSRM fetch once more
   if (candidatePaths.length === 0) {
     const retryDirect = await fetchOSRMRoute(realStartLat, realStartLon, realEndLat, realEndLon);
-    candidatePaths.push(...retryDirect);
+    retryDirect.forEach(r => {
+      if (r && r.coordinates && r.coordinates.length > 0) {
+        candidatePaths.push(r.coordinates);
+        if (r.steps && r.steps.length > 0) allOsrmSteps.push(...r.steps);
+      }
+    });
   }
 
   // 3. Build street graph from all OSRM real street polylines
@@ -361,39 +613,64 @@ async function generateRoutes(startLat, startLon, endLat, endLon, hazards = []) 
   const safestEval = evaluatePathSafety(safestPathCoords, hazards);
   const optimalEval = evaluatePathSafety(optimalPathCoords, hazards);
 
+  // 7. Generate turn-by-turn navigation steps and hazards for each route
+  const fastestSteps = buildTurnByTurnSteps(fastestPathCoords, hazards, allOsrmSteps);
+  const safestSteps = buildTurnByTurnSteps(safestPathCoords, hazards, allOsrmSteps);
+  const optimalSteps = buildTurnByTurnSteps(optimalPathCoords, hazards, allOsrmSteps);
+
+  const fastestHazards = findUpcomingHazardsAlongRoute(fastestPathCoords, hazards, 75);
+  const safestHazards = findUpcomingHazardsAlongRoute(safestPathCoords, hazards, 75);
+  const optimalHazards = findUpcomingHazardsAlongRoute(optimalPathCoords, hazards, 75);
+
+  const fastestDurationMin = Math.max(1, Math.round((fastestEval.totalDistanceKm / 30) * 60));
+  const safestDurationMin = Math.max(1, Math.round((safestEval.totalDistanceKm / 30) * 60));
+  const optimalDurationMin = Math.max(1, Math.round((optimalEval.totalDistanceKm / 30) * 60));
+
   return {
     fastestRoute: {
       name: 'Fastest Route',
       type: 'fastest',
       coordinates: fastestPathCoords,
       distanceKm: fastestEval.totalDistanceKm,
+      durationMinutes: fastestDurationMin,
       hazardScore: fastestEval.totalHazardScore,
       safetyLevel: fastestEval.safetyLevelInfo.level,
       color: '#007bff', // Blue for Fastest
       safetyColor: fastestEval.safetyLevelInfo.color,
-      segments: fastestEval.segments
+      segments: fastestEval.segments,
+      steps: fastestSteps,
+      upcomingHazards: fastestHazards,
+      totalStepsCount: fastestSteps.length
     },
     safestRoute: {
       name: 'Safest Route',
       type: 'safest',
       coordinates: safestPathCoords,
       distanceKm: safestEval.totalDistanceKm,
+      durationMinutes: safestDurationMin,
       hazardScore: safestEval.totalHazardScore,
       safetyLevel: safestEval.safetyLevelInfo.level,
       color: '#28a745', // Green for Safest
       safetyColor: safestEval.safetyLevelInfo.color,
-      segments: safestEval.segments
+      segments: safestEval.segments,
+      steps: safestSteps,
+      upcomingHazards: safestHazards,
+      totalStepsCount: safestSteps.length
     },
     optimalRoute: {
       name: 'Optimal Route',
       type: 'optimal',
       coordinates: optimalPathCoords,
       distanceKm: optimalEval.totalDistanceKm,
+      durationMinutes: optimalDurationMin,
       hazardScore: optimalEval.totalHazardScore,
       safetyLevel: optimalEval.safetyLevelInfo.level,
       color: '#6f42c1', // Purple for Optimal
       safetyColor: optimalEval.safetyLevelInfo.color,
-      segments: optimalEval.segments
+      segments: optimalEval.segments,
+      steps: optimalSteps,
+      upcomingHazards: optimalHazards,
+      totalStepsCount: optimalSteps.length
     },
     constants: {
       alpha: ROUTING_CONSTANTS.ALPHA,

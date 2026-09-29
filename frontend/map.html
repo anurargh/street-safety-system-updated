@@ -11,87 +11,109 @@
 </head>
 <body>
     <!-- Civic Control-Room Top Command Bar -->
-    <div class="map-control-bar">
+    <header class="map-control-bar">
         <div class="map-bar-left">
-            <a href="landing.html" class="map-brand-link">
-                <span>SSS</span>
-                <span>Street Safety Map</span>
+            <a href="landing.html" class="map-brand-link" title="Street Safety Civic Network">
+                <span class="brand-badge-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </span>
+                <span class="brand-title-text">Street Safety</span>
             </a>
-            <span class="map-brand-tag">MYSURU SECTOR</span>
+            <span class="map-brand-tag">MYSURU</span>
         </div>
 
         <div class="map-bar-center">
-            <div class="telemetry-readout">
+            <div class="telemetry-pill">
                 <span class="live-dot"></span>
-                <span>STATUS: <span class="val">ACTIVE</span></span>
+                <span class="pill-label">Live Network</span>
             </div>
-            <div class="telemetry-readout">
-                <span>COORDINATES: <span id="cursorCoordsReadout" class="val">12.3052° N, 76.6552° E</span></span>
+            <div class="telemetry-pill" id="activeHazardsCountBlock">
+                <span class="pill-icon">⚠️</span>
+                <span><strong id="activeHazardsCountVal" class="val">--</strong> Hazards Active</span>
             </div>
-            <div class="telemetry-readout" style="display: none;" id="activeHazardsCountBlock">
-                <span>HAZARDS: <span id="activeHazardsCountVal" class="val">--</span></span>
+            <div class="telemetry-pill coords-readout">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                <span id="cursorCoordsReadout" class="val">12.3052° N, 76.6552° E</span>
             </div>
         </div>
 
         <div class="map-bar-right">
-            <div id="authPromptContainer" style="display: flex; align-items: center; gap: 8px;">
-                <span id="authNotice" class="auth-notice" style="display: none; font-family: var(--font-mono); font-size: 0.72rem; color: #fbbf24;">
-                    <a href="login.html" style="color: #fbbf24; text-decoration: underline;">Log in to report or vote</a>
+            <div id="authPromptContainer" class="auth-prompt-container">
+                <span id="authNotice" class="auth-notice" style="display: none;">
+                    <a href="login.html">Sign in to vote</a>
                 </span>
-                <a href="login.html" id="authLoginLink" class="btn-bar-action" style="display: inline-flex;">Sign In →</a>
-                <span id="authUserBadge" class="auth-user-badge" style="display: none; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 0.72rem; color: #93c5fd; background: rgba(37,99,235,0.2); border: 1px solid rgba(59,130,246,0.4); padding: 4px 8px; border-radius: 3px;">
-                    <span style="color: #60a5fa;">●</span> <span id="userEmailSpan"></span>
-                </span>
-                <button id="authLogoutBtn" class="btn-bar-action" style="display: none;" title="Log out">Sign Out ⎋</button>
+                <a href="login.html" id="authLoginLink" class="btn-bar-login">Sign In</a>
+                <div id="authUserBadge" class="auth-user-badge" style="display: none;">
+                    <span class="user-avatar-circle" id="userAvatarInitial">●</span>
+                    <span id="userEmailSpan" class="user-email-text"></span>
+                </div>
+                <button id="authLogoutBtn" class="btn-bar-logout" style="display: none;" title="Sign out of account">Sign Out</button>
             </div>
-            <button id="reportCrimeBtn" class="btn-report-hazard">⚠️ Report Hazard</button>
-            <a href="landing.html" class="btn-bar-action" title="Return to Civic Landing Page">Overview ↗</a>
+            <button id="reportCrimeBtn" class="btn-report-hazard">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span>Report Hazard</span>
+            </button>
+            <a href="landing.html" class="btn-bar-overview" title="Return to Civic Overview">Overview ↗</a>
         </div>
-    </div>
+    </header>
 
     <!-- Map Canvas -->
     <div id="map"></div>
 
     <!-- Navigation & Route Control Panel (Left Floating Wayfinding Unit) -->
-    <div id="routeNavigationPanel" class="route-nav-panel">
+    <aside id="routeNavigationPanel" class="route-nav-panel">
         <div class="panel-header">
-            <h3><span>🧭</span> Safety Wayfinding</h3>
-            <button id="togglePanelBtn" title="Toggle Panel">&minus;</button>
+            <div class="panel-header-left">
+                <span class="panel-header-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                </span>
+                <h3>Route Planning</h3>
+            </div>
+            <button id="togglePanelBtn" class="btn-panel-toggle" title="Collapse Panel"><span>—</span></button>
         </div>
 
         <div id="panelContent">
-            <!-- Source Input -->
-            <div class="nav-input-group">
-                <label for="sourceInput">
-                    <span>Origin / Start</span>
-                    <span style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--color-ink-muted);">[SOURCE]</span>
-                </label>
-                <div class="input-with-buttons">
-                    <input type="text" id="sourceInput" placeholder="Address, landmark or pick pin..." />
-                    <button id="useMyLocationBtn" type="button" title="Use current GPS location">📍</button>
-                    <button id="pickSourceBtn" type="button" title="Pick point on map">🗺️</button>
+            <!-- Connected Route Inputs -->
+            <div class="wayfinding-route-inputs">
+                <div class="route-input-line">
+                    <span class="route-dot origin-dot" title="Starting Point"></span>
+                    <span class="route-connector-dash"></span>
+                    <span class="route-dot dest-dot" title="Target Destination"></span>
                 </div>
-            </div>
-
-            <!-- Destination Input -->
-            <div class="nav-input-group">
-                <label for="destInput">
-                    <span>Destination Point</span>
-                    <span style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--color-ink-muted);">[TARGET]</span>
-                </label>
-                <div class="input-with-buttons">
-                    <input type="text" id="destInput" placeholder="Address, landmark or pick pin..." />
-                    <button id="pickDestBtn" type="button" title="Pick point on map">🗺️</button>
+                <div class="route-input-fields">
+                    <div class="nav-input-row">
+                        <input type="text" id="sourceInput" placeholder="Starting point (address or pin)..." autocomplete="off" />
+                        <div class="input-actions">
+                            <button id="useMyLocationBtn" type="button" class="btn-input-action" title="Use current GPS location">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><line x1="12" y1="1" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="1" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="23" y2="12"/></svg>
+                            </button>
+                            <button id="pickSourceBtn" type="button" class="btn-input-action" title="Pick starting point on map">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="nav-input-row">
+                        <input type="text" id="destInput" placeholder="Destination point..." autocomplete="off" />
+                        <div class="input-actions">
+                            <button id="pickDestBtn" type="button" class="btn-input-action" title="Pick destination on map">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div class="action-button-row">
-                <button id="generateRoutesBtn" class="btn-primary">Compute Routes</button>
-                <button id="clearRoutesBtn" class="btn-secondary">Reset</button>
+                <button id="generateRoutesBtn" class="btn-compute-routes">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                    <span>Compute Safety Routes</span>
+                </button>
+                <button id="clearRoutesBtn" class="btn-reset-routes" title="Clear inputs and paths">Reset</button>
             </div>
 
             <div id="routeLoadingSpinner" style="display: none;" class="loading-spinner">
-                Computing Safety-Aware Trajectories...
+                <span class="spinner-icon"></span>
+                <span>Computing Safety-Aware Trajectories...</span>
             </div>
 
             <!-- Route Info Cards Container -->
@@ -99,56 +121,75 @@
                 <!-- Fastest Route Card -->
                 <div id="fastestRouteCard" class="route-card fastest-card">
                     <div class="route-card-header">
-                        <span class="route-title"><span class="route-indicator fastest-indicator"></span> Fastest Path</span>
-                        <input type="checkbox" id="toggleFastestRoute" checked title="Show/Hide route on map" />
+                        <div class="route-title">
+                            <span class="route-indicator fastest-indicator"></span>
+                            <span>Fastest Path</span>
+                        </div>
+                        <label class="route-toggle-switch" title="Show or hide fastest route on map">
+                            <input type="checkbox" id="toggleFastestRoute" checked />
+                            <span class="toggle-slider"></span>
+                        </label>
                     </div>
                     <div class="route-card-metrics">
                         <div class="metric"><span class="label">Distance</span> <span id="fastestDistance" class="value">0 km</span></div>
                         <div class="metric"><span class="label">Hazard Score</span> <span id="fastestHazard" class="value">0</span></div>
                         <div class="metric"><span class="label">Safety Tier</span> <span id="fastestSafety" class="safety-badge">--</span></div>
                     </div>
+                    <button type="button" class="btn-start-nav fastest-nav-btn" data-route="fastest" title="Start live navigation along fastest route">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        <span>Start Live Navigation</span>
+                    </button>
                 </div>
 
                 <!-- Safest Route Card -->
                 <div id="safestRouteCard" class="route-card safest-card">
                     <div class="route-card-header">
-                        <span class="route-title"><span class="route-indicator safest-indicator"></span> Safest Path</span>
-                        <input type="checkbox" id="toggleSafestRoute" checked title="Show/Hide route on map" />
+                        <div class="route-title">
+                            <span class="route-indicator safest-indicator"></span>
+                            <span>Safest Path</span>
+                        </div>
+                        <label class="route-toggle-switch" title="Show or hide safest route on map">
+                            <input type="checkbox" id="toggleSafestRoute" checked />
+                            <span class="toggle-slider"></span>
+                        </label>
                     </div>
                     <div class="route-card-metrics">
                         <div class="metric"><span class="label">Distance</span> <span id="safestDistance" class="value">0 km</span></div>
                         <div class="metric"><span class="label">Hazard Score</span> <span id="safestHazard" class="value">0</span></div>
                         <div class="metric"><span class="label">Safety Tier</span> <span id="safestSafety" class="safety-badge">--</span></div>
                     </div>
+                    <button type="button" class="btn-start-nav safest-nav-btn" data-route="safest" title="Start live navigation along safest route">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        <span>Start Live Navigation</span>
+                    </button>
                 </div>
 
                 <!-- Optimal Route Card -->
                 <div id="optimalRouteCard" class="route-card optimal-card">
                     <div class="route-card-header">
-                        <span class="route-title"><span class="route-indicator optimal-indicator"></span> Optimal Trade-off</span>
-                        <input type="checkbox" id="toggleOptimalRoute" checked title="Show/Hide route on map" />
+                        <div class="route-title">
+                            <span class="route-indicator optimal-indicator"></span>
+                            <span>Optimal Trade-off</span>
+                        </div>
+                        <label class="route-toggle-switch" title="Show or hide optimal route on map">
+                            <input type="checkbox" id="toggleOptimalRoute" checked />
+                            <span class="toggle-slider"></span>
+                        </label>
                     </div>
                     <div class="route-card-metrics">
                         <div class="metric"><span class="label">Distance</span> <span id="optimalDistance" class="value">0 km</span></div>
                         <div class="metric"><span class="label">Hazard Score</span> <span id="optimalHazard" class="value">0</span></div>
                         <div class="metric"><span class="label">Safety Tier</span> <span id="optimalSafety" class="safety-badge">--</span></div>
                     </div>
+                    <button type="button" class="btn-start-nav optimal-nav-btn" data-route="optimal" title="Start live navigation along optimal route">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        <span>Start Live Navigation</span>
+                    </button>
                 </div>
             </div>
 
-            <!-- Safety Levels Legend -->
-            <div class="map-legend">
-                <h4>Signal Severity Legend</h4>
-                <div class="legend-grid">
-                    <div class="legend-item"><span class="color-box" style="background-color: #2563eb;"></span> Blue: Very Safe</div>
-                    <div class="legend-item"><span class="color-box" style="background-color: #16a34a;"></span> Green: Safe</div>
-                    <div class="legend-item"><span class="color-box" style="background-color: #d97706;"></span> Yellow: Moderate</div>
-                    <div class="legend-item"><span class="color-box" style="background-color: #ea580c;"></span> Orange: High Risk</div>
-                    <div class="legend-item"><span class="color-box" style="background-color: #dc2626;"></span> Red: Critical</div>
-                </div>
-            </div>
         </div>
-    </div>
+    </aside>
 
     <!-- Modal Backdrop for Hazard Report -->
     <div id="modalBackdrop" class="modal-backdrop"></div>
@@ -156,8 +197,13 @@
     <!-- Hazard Report Intake Form Modal -->
     <div id="crimeReportForm" style="display: none;">
         <div class="report-modal-header">
-            <h3>Citizen Hazard Report</h3>
-            <span class="form-code">FORM SSS-04</span>
+            <div class="modal-header-title">
+                <span class="modal-header-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </span>
+                <h3>Citizen Hazard Report</h3>
+            </div>
+            <button type="button" id="closeReportModalBtn" class="btn-modal-close" title="Close report dialog">✕</button>
         </div>
 
         <div class="report-modal-body">
@@ -166,58 +212,207 @@
                     <label for="crime-type">Hazard Category</label>
                     <select id="crime-type" name="crime-type" required>
                         <option value="">Select Hazard Category</option>
-                        <option value="Road Accident">🚗 Road Accident / Collision</option>
-                        <option value="Pothole">🕳️ Pothole / Surface Defect</option>
-                        <option value="Broken Streetlight">💡 Broken Streetlight / Outage</option>
-                        <option value="Poor Lighting">🌑 Poor Lighting / Dark Zone</option>
+                        <option value="Road Accident">🚗 Road Accident • Collision</option>
+                        <option value="Pothole">🕳️ Pothole • Surface Defect</option>
+                        <option value="Broken Streetlight">💡 Broken Streetlight • Outage</option>
+                        <option value="Poor Lighting">🌑 Poor Lighting • Dark Zone</option>
                         <option value="Stray Dogs">🐕 Stray Animal Activity</option>
-                        <option value="Road Construction">🚧 Road Construction / Works</option>
-                        <option value="Fallen Tree">🌳 Fallen Tree / Obstruction</option>
-                        <option value="Flooded Road">🌊 Waterlogging / Flooded Road</option>
+                        <option value="Road Construction">🚧 Road Construction • Works</option>
+                        <option value="Fallen Tree">🌳 Fallen Tree • Obstruction</option>
+                        <option value="Flooded Road">🌊 Waterlogging • Flooded Road</option>
                         <option value="Traffic Signal Failure">🚦 Traffic Signal Failure</option>
                         <option value="Unsafe Crossing">🚶 Unsafe Pedestrian Crossing</option>
-                        <option value="Open Manhole">🕳️ Open Manhole / Drain Defect</option>
+                        <option value="Open Manhole">🕳️ Open Manhole • Drain Defect</option>
                         <option value="Medical Emergency">🚑 Medical Emergency Alert</option>
                         <option value="Fire Hazard">🔥 Fire Hazard Alert</option>
-                        <option value="Crime Alert">🚨 Crime / Suspicious Activity</option>
+                        <option value="Crime Alert">🚨 Crime Alert • Suspicious Activity</option>
                         <option value="General Hazard">⚠️ General Safety Hazard</option>
                     </select>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 14px;">
-                    <label for="hazard-severity">Severity Rating (1 - 10)</label>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <input type="range" id="hazard-severity" name="hazard-severity" min="1" max="10" value="6" style="flex: 1; accent-color: var(--color-ink-primary);" oninput="document.getElementById('severityVal').textContent = this.value">
-                        <span id="severityVal" style="font-family: var(--font-mono); font-weight: 800; width: 28px; text-align: center; color: var(--signal-blue); font-size: 1rem;">6</span>
+                <div class="form-group severity-group">
+                    <div class="severity-header-row">
+                        <label for="hazard-severity">Severity Rating (1 – 10)</label>
+                        <span id="severityVal" class="severity-readout-badge sev-level-6">6 / 10</span>
+                    </div>
+                    <div class="slider-track-wrap">
+                        <input type="range" id="hazard-severity" name="hazard-severity" min="1" max="10" value="6" oninput="updateSeverityUI(this.value)">
                     </div>
                 </div>
 
                 <div class="location-picker-box">
-                    <label for="location" style="margin-bottom: 4px;">Incident Coordinates (Click Map or Pick)</label>
-                    <div style="display: flex; gap: 6px; margin-top: 4px;">
-                        <input type="text" id="location" placeholder="Click map or use pick tool..." required style="flex: 1; margin-bottom: 0;">
-                        <button id="pickReportLocationBtn" type="button" title="Pick point on map" style="background: var(--color-ink-primary); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap; font-size: 0.8rem;">🗺️ Pick</button>
+                    <label for="location">Incident Coordinates</label>
+                    <div class="picker-input-row">
+                        <input type="text" id="location" placeholder="Click map or use pick tool..." required>
+                        <button id="pickReportLocationBtn" type="button" class="btn-pick-coords" title="Pick point on map">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                            <span>Pick Pin</span>
+                        </button>
                     </div>
-                    <small id="locationHint" class="picker-hint">📍 Click anywhere on map or drag pin to adjust coordinates.</small>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 14px;">
-                    <label for="address">Address / Landmark (Optional)</label>
-                    <input type="text" id="address" placeholder="e.g., Near Suburban Bus Stand, Mirza Road">
+                    <small id="locationHint" class="picker-hint">📍 Click map or drag pin to position exact coordinates.</small>
                 </div>
 
                 <div class="form-group">
-                    <label for="crime-details">Incident Details / Observations</label>
-                    <textarea id="crime-details" rows="3" placeholder="Specify exact lane, direction of travel, or observed risk..."></textarea>
+                    <label for="address">Address • Landmark (Optional)</label>
+                    <input type="text" id="address" placeholder="e.g. Near Suburban Bus Stand, Mirza Road">
                 </div>
 
-                <div id="successMessage" style="color: var(--signal-green); font-weight: 700; font-family: var(--font-mono); font-size: 0.82rem; display: none; margin-top: 10px; padding: 8px; background: var(--signal-green-bg); border: 1px solid rgba(22, 163, 74, 0.3); border-radius: 4px; text-align: center;">Hazard reported and ingested successfully.</div>
+                <div class="form-group">
+                    <label for="crime-details">Incident Details • Observations</label>
+                    <textarea id="crime-details" rows="3" placeholder="Specify lane, direction of travel, or observed risk..."></textarea>
+                </div>
 
-                <div style="display: flex; gap: 10px; margin-top: 16px;">
-                    <button type="submit" id="submitCrimeBtn" style="flex: 1; background: var(--signal-red); color: white; border: none; padding: 11px; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em;">Submit Report</button>
-                    <button type="button" id="cancelCrimeReport" style="background: var(--color-bg-subtle); color: var(--color-ink-primary); border: 1px solid var(--color-border-grid); padding: 11px 16px; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 0.85rem; text-transform: uppercase;">Cancel</button>
+                <div id="successMessage" class="form-success-banner" style="display: none;">Hazard reported and ingested successfully.</div>
+
+                <div class="form-actions-row">
+                    <button type="submit" id="submitCrimeBtn" class="btn-modal-submit">Submit Hazard Report</button>
+                    <button type="button" id="cancelCrimeReport" class="btn-modal-cancel">Cancel</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Real-Time Live Navigation HUD (Google Maps Experience) -->
+    <div id="liveNavigationHUD" class="live-nav-hud" style="display: none;">
+        <!-- Top Turn Guidance Banner -->
+        <div class="live-nav-top-banner">
+            <div class="live-nav-maneuver-icon-box" id="liveNavManeuverIcon" title="Next Maneuver">
+                <span class="maneuver-svg-wrapper" id="liveNavManeuverSymbol">⬆️</span>
+            </div>
+            <div class="live-nav-instruction-col">
+                <div class="live-nav-distance-row">
+                    <span id="liveNavDistanceText" class="live-nav-dist-val">In 180 m</span>
+                    <span id="liveNavStreetBadge" class="live-nav-street-badge">STREET</span>
+                </div>
+                <div id="liveNavInstructionText" class="live-nav-instruction-text">Head south on departure route</div>
+                <div id="liveNavNextStepTeaser" class="live-nav-next-teaser" style="display: none;">
+                    <span class="teaser-label">THEN:</span> <span id="liveNavNextStepText">Turn right onto Sayyaji Rao Road</span>
+                </div>
+            </div>
+            <div class="live-nav-banner-actions">
+                <button id="liveNavVoiceToggleBtn" class="btn-hud-round" title="Toggle Voice Guidance (Text-to-Speech)">
+                    <span id="liveNavVoiceIcon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                    </span>
+                </button>
+                <button id="liveNavStepsDrawerBtn" class="btn-hud-round" title="View Full Itinerary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                </button>
+                <button id="liveNavExitBtn" class="btn-hud-round btn-hud-exit" title="Exit Live Navigation">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Hazard Radar Warning Banner (Shown when hazard detected ahead within 300m) -->
+        <div id="liveNavHazardBanner" class="live-nav-hazard-banner" style="display: none;">
+            <div class="hazard-banner-pulse">⚠️</div>
+            <div class="hazard-banner-text">
+                <strong id="liveNavHazardType">Hazard Ahead: Pothole / Surface Defect</strong>
+                <span id="liveNavHazardDetail">Reported in 120m • Slow down and proceed with caution</span>
+            </div>
+            <span id="liveNavHazardSeverityBadge" class="hazard-badge-pill">SEV 7/10</span>
+        </div>
+
+        <!-- Floating Live Tracking & Mode Control Bar -->
+        <div class="live-nav-floating-bar" id="liveNavFloatingBar">
+            <div class="sim-mode-badge" id="liveNavModeBadge">
+                <span class="sim-pulse-dot" id="liveNavPulseDot"></span>
+                <span id="liveNavModeLabel">LIVE GPS ACTIVE</span>
+            </div>
+            <!-- Simulation tools visible only when user toggles Demo Run -->
+            <div id="liveNavSimTools" style="display: none; align-items: center; gap: 6px;">
+                <button id="liveNavPlayPauseBtn" class="btn-sim-control" title="Play / Pause Demo Simulation">⏸️ Pause</button>
+                <div class="sim-speed-selector">
+                    <button class="btn-speed-opt active" data-speed="1">1x</button>
+                    <button class="btn-speed-opt" data-speed="2">2x</button>
+                    <button class="btn-speed-opt" data-speed="5">5x</button>
+                </div>
+                <button id="liveNavStepForwardBtn" class="btn-sim-control" title="Jump to Next Turn">⏭️ Next</button>
+            </div>
+            <button id="liveNavToggleGpsBtn" class="btn-sim-control btn-gps-switch" title="Toggle Demo Simulation Mode">⚡ Demo Run</button>
+        </div>
+
+        <!-- Floating Re-center Camera Button -->
+        <button id="liveNavRecenterBtn" class="live-nav-recenter-fab" title="Center Camera on User">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="7"/><line x1="12" y1="1" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="1" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="23" y2="12"/></svg>
+            <span class="recenter-text">Re-center</span>
+        </button>
+
+        <!-- Bottom Navigation Dock -->
+        <div class="live-nav-bottom-dock">
+            <!-- Progress Line Indicator -->
+            <div class="live-nav-progress-track">
+                <div id="liveNavProgressBar" class="live-nav-progress-fill" style="width: 0%;"></div>
+            </div>
+
+            <div class="dock-primary-row">
+                <div class="dock-metrics-left">
+                    <div class="dock-time-block">
+                        <span id="liveNavRemainingTime" class="dock-time-val">-- min</span>
+                        <span class="dock-metric-unit">REMAINING</span>
+                    </div>
+                    <div class="dock-divider"></div>
+                    <div class="dock-distance-block">
+                        <span id="liveNavRemainingDistance" class="dock-distance-val">-- km</span>
+                        <span class="dock-metric-unit">DISTANCE</span>
+                    </div>
+                    <div class="dock-divider"></div>
+                    <div class="dock-eta-block">
+                        <span id="liveNavEtaTime" class="dock-eta-val">--:--</span>
+                        <span class="dock-metric-unit">EST. ARRIVAL</span>
+                    </div>
+                </div>
+
+                <div class="dock-actions-right">
+                    <span id="liveNavRouteBadge" class="dock-route-badge">🛡️ Safest</span>
+                    <button id="liveNavEndTripBtn" class="btn-dock-end">End Navigation</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Turn-by-Turn Steps Itinerary Modal / Drawer -->
+    <div id="liveNavStepsModal" class="live-nav-steps-modal" style="display: none;">
+        <div class="steps-modal-header">
+            <div class="steps-modal-title">
+                <span>🧭 Route Itinerary & Maneuvers</span>
+                <span id="stepsModalRouteName" class="steps-modal-subtitle">Safest Path</span>
+            </div>
+            <button id="closeStepsModalBtn" class="btn-close-steps">✕</button>
+        </div>
+        <div class="steps-modal-body" id="liveNavStepsList">
+            <!-- Dynamically populated with all turn-by-turn steps -->
+        </div>
+    </div>
+
+    <!-- Destination Arrival Summary Modal -->
+    <div id="liveNavArrivalModal" class="live-nav-arrival-modal" style="display: none;">
+        <div class="arrival-card">
+            <div class="arrival-icon-celebration">🎉</div>
+            <h2>Destination Reached!</h2>
+            <p class="arrival-sub">You have safely completed your guided journey.</p>
+
+            <div class="arrival-stats-grid">
+                <div class="arrival-stat-box">
+                    <span class="stat-num" id="arrivalTotalDist">-- km</span>
+                    <span class="stat-lbl">Distance Traveled</span>
+                </div>
+                <div class="arrival-stat-box">
+                    <span class="stat-num" id="arrivalTotalTime">-- min</span>
+                    <span class="stat-lbl">Total Time</span>
+                </div>
+                <div class="arrival-stat-box">
+                    <span class="stat-num" id="arrivalHazardsAvoided">0</span>
+                    <span class="stat-lbl">Hazards Avoided</span>
+                </div>
+                <div class="arrival-stat-box">
+                    <span class="stat-num" id="arrivalRouteType">Safest</span>
+                    <span class="stat-lbl">Selected Route</span>
+                </div>
+            </div>
+
+            <button id="finishArrivalBtn" class="btn-finish-arrival">Done & Return to Map</button>
         </div>
     </div>
 

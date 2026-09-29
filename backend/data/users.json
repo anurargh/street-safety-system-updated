@@ -22,5 +22,19 @@
     "email": "demo@streetsafety.gov",
     "password": "$2b$10$CtCPNrWoV7lvaWKtkdfM.eCIu2MBNuFWusIkjeBeLxJ54lItYz.Yi",
     "createdAt": "2026-08-29T16:23:59.000Z"
+  },
+  {
+    "_id": "user_1790601033599",
+    "username": "Anurag S.",
+    "email": "anurag@test.com",
+    "password": "$2b$10$VnlDydSuonEXjfw7hZ638.tzRjv7oV8VTONdyWn5dNyE0inbLrkZ6",
+    "createdAt": "2026-09-28T13:10:33.599Z"
+  },
+  {
+    "_id": "user_1790601033705",
+    "username": "Priya K.",
+    "email": "priya@test.com",
+    "password": "$2b$10$PT92QLQ5xF.qmaA4sjExCeDJyqrvlJSqAgFQ9qQat3Qrd0wxXJ4lm",
+    "createdAt": "2026-09-28T13:10:33.705Z"
   }
 ]

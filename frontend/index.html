@@ -3,39 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Street Safety System — Civic Safety & Wayfinding Infrastructure</title>
+    <title>Street Safety System — Civic Safety &amp; Wayfinding Infrastructure</title>
+    <meta name="description" content="Municipal safety and wayfinding platform providing real-time awareness of road hazards, community-verified incident telemetry, and safety-first routing.">
+    <meta property="og:title" content="Street Safety System — Civic Safety &amp; Wayfinding Infrastructure">
+    <meta property="og:description" content="Municipal safety and wayfinding platform providing real-time awareness of road hazards, community-verified incident telemetry, and safety-first routing.">
     <link rel="stylesheet" href="landing-style.css">
 </head>
 <body>
-    <!-- Civic Top Status Banner -->
+    <!-- Top System Status Strip -->
     <header class="civic-header">
         <div class="civic-top-bar">
             <div class="system-status">
                 <span class="status-dot"></span>
-                <span>CIVIC TELEMETRY ACTIVE // NODE: MYSURU-SOUTH-01</span>
+                <span>CIVIC TRANSIT WAYFINDING NETWORK • REAL-TIME HAZARD &amp; INCIDENT TELEMETRY</span>
             </div>
-            <div>STREET SAFETY PROTOCOL V2.4</div>
+            <div>STATUS: OPERATIONAL</div>
         </div>
 
         <nav class="civic-nav">
-            <a href="landing.html" class="brand-unit">
-                <div class="brand-emblem">SSS</div>
+            <a href="index.html" class="brand-unit" title="Street Safety Civic Network">
+                <div class="brand-emblem-shield">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
                 <div class="brand-text">
                     <span class="brand-name">Street Safety System</span>
-                    <span class="brand-sub">Civic Hazard & Wayfinding Network</span>
+                    <span class="brand-sub">Civic Hazard &amp; Wayfinding Network</span>
                 </div>
             </a>
 
             <ul class="nav-menu">
-                <li><a href="#methodology" class="nav-link">Architecture</a></li>
-                <li><a href="#matrix" class="nav-link">Hazard Index</a></li>
-                <li><a href="map.html" class="nav-link" style="color: var(--signal-blue);">Live Map</a></li>
+                <li><a href="map.html" class="nav-link" style="color: #38bdf8; font-weight: 700;">Live Map ↗</a></li>
+                <li><a href="#architecture" class="nav-link">Architecture</a></li>
+                <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+                <li><a href="#live-feed" class="nav-link">Signal Feed</a></li>
             </ul>
 
-            <div class="nav-actions">
+            <div class="nav-actions" id="navActions">
                 <a href="login.html" class="btn-civic btn-civic-outline">Sign In</a>
                 <a href="register.html" class="btn-civic btn-civic-outline">Register</a>
-                <a href="map.html" class="btn-civic btn-civic-accent">Launch Map ↗</a>
+                <a href="map.html" class="btn-civic btn-civic-accent">Live Map ↗</a>
             </div>
         </nav>
     </header>
@@ -46,43 +52,53 @@
             <div class="hero-grid">
                 <div class="hero-main">
                     <div class="hero-label">
-                        <span>●</span> Standard Civic Transit & Safety Platform
+                        <span>●</span> Standard Civic Transit &amp; Safety Platform
                     </div>
                     <h1 class="hero-title">
-                        Civic safety & wayfinding infrastructure.
+                        Civic safety &amp; wayfinding infrastructure.
                     </h1>
                     <p class="hero-subtitle">
-                        Immediate, real-time spatial awareness of hazards, accidents, and security conditions. Built around an interactive, community-validated topological map and algorithmic multi-objective safe routing.
+                        Immediate, real-time spatial awareness of hazards, accidents, and road conditions across municipal transit networks. Built with community-validated telemetry and multi-objective algorithmic safety routing.
                     </p>
                     <div class="hero-cta-group">
                         <a href="map.html" class="btn-civic btn-civic-accent">Open Live Interactive Map ↗</a>
-                        <a href="login.html" class="btn-civic btn-civic-solid">Citizen Incident Reporting</a>
-                        <a href="#matrix" class="btn-civic btn-civic-outline">Review Hazard Index ↓</a>
+                        <a href="login.html" class="btn-civic btn-civic-solid" id="heroReportBtn">Report Road Hazard</a>
+                    </div>
+                    <div class="hero-feature-tags">
+                        <div class="hero-feature-tag-item"><span>●</span> 3-Objective Routing Engine</div>
+                        <div class="hero-feature-tag-item"><span>●</span> Live GPS Navigation</div>
+                        <div class="hero-feature-tag-item"><span>●</span> Community Verified</div>
                     </div>
                 </div>
 
-                <!-- Live Signal Board Preview -->
-                <div class="hero-signal-board">
+                <!-- Live Signal Board Preview (Matches main app look & feel) -->
+                <div class="hero-signal-board" id="live-feed">
                     <div class="board-header">
-                        <span>Active Hazard Feed</span>
-                        <span class="board-live-pill"><span class="board-live-dot"></span> Realtime</span>
+                        <div class="board-header-title">
+                            <span class="board-header-icon">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            </span>
+                            <span>Active Hazard Feed</span>
+                        </div>
+                        <span class="board-live-pill" id="boardLivePill"><span class="board-live-dot"></span> Realtime</span>
                     </div>
                     <div class="board-body" id="liveSignalBody">
                         <div style="padding: 24px; text-align: center; color: var(--color-ink-muted); font-size: 0.85rem; font-family: var(--font-mono);">
                             Querying civic hazard registry...
                         </div>
                     </div>
+                    <div class="board-footer">
+                        <a href="map.html">View All Active Hazards on Full Map →</a>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Civic Methodology & Features -->
-        <section id="methodology" class="civic-section">
+        <!-- Civic Architecture & Features -->
+        <section id="architecture" class="civic-section">
             <div class="section-head">
-                <div>
-                    <div class="section-tag">System Architecture</div>
-                    <h2 class="section-title">Designed for unhesitating clarity.</h2>
-                </div>
+                <div class="section-tag">System Architecture</div>
+                <h2 class="section-title">Designed for unhesitating clarity.</h2>
                 <p class="section-lead">
                     Standardized wayfinding and risk modeling replace ambiguous reports with strict topological guidance.
                 </p>
@@ -90,224 +106,295 @@
 
             <div class="pillars-grid">
                 <div class="pillar-card">
-                    <div class="pillar-index">01 // SIGNAL TAXONOMY</div>
+                    <div class="pillar-icon-badge pillar-icon-blue">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/><circle cx="12" cy="12" r="2"/></svg>
+                    </div>
+                    <div class="pillar-index">01 • SIGNAL TAXONOMY</div>
                     <h3>Deterministic Hazard Classification</h3>
                     <p>
-                        Every hazard—from surface defects to serious accidents—is evaluated against a strict 1-to-10 severity scale and radius of influence, eliminating cognitive clutter.
+                        Every hazard—from surface defects to severe collisions—is evaluated against a strict 1-to-10 severity scale and radius of influence, eliminating cognitive clutter for pedestrians and drivers.
                     </p>
                     <div class="pillar-metric-box">
                         <span class="metric-label">Classification Mode</span>
-                        <span class="metric-val">Severity &amp; Hazard Views</span>
+                        <span class="metric-val">Severity &amp; Hazard Taxonomy</span>
                     </div>
                 </div>
 
                 <div class="pillar-card">
-                    <div class="pillar-index">02 // MULTI-OBJECTIVE ENGINE</div>
+                    <div class="pillar-icon-badge pillar-icon-purple">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>
+                    </div>
+                    <div class="pillar-index">02 • MULTI-OBJECTIVE ENGINE</div>
                     <h3>Multi-Objective Safe Routing</h3>
                     <p>
-                        Calculate three mathematically distinct routes between any coordinates: the pure Fastest path, the risk-minimized Safest path, and a balanced Optimal trajectory.
+                        Calculate three mathematically distinct routes between any coordinates: the fastest path for urgent transit, the risk-minimized safest path, and a balanced optimal trajectory.
                     </p>
                     <div class="pillar-metric-box">
                         <span class="metric-label">Engine Output</span>
-                        <span class="metric-val">Fastest / Safest / Optimal</span>
+                        <span class="metric-val">Fastest • Safest • Optimal Paths</span>
                     </div>
                 </div>
 
                 <div class="pillar-card">
-                    <div class="pillar-index">03 // COLLECTIVE VERIFICATION</div>
+                    <div class="pillar-icon-badge pillar-icon-green">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                    </div>
+                    <div class="pillar-index">03 • COLLECTIVE VERIFICATION</div>
                     <h3>Citizen Consensus Ledger</h3>
                     <p>
-                        Community members report incidents with precision map-point pickers. Real-time consensus voting confirms active status and filters false positives.
+                        Community members report incidents with precision map-point pickers. Real-time consensus voting confirms active status and filters out outdated or false alerts.
                     </p>
                     <div class="pillar-metric-box">
                         <span class="metric-label">Verification Type</span>
-                        <span class="metric-val">Community Validated</span>
+                        <span class="metric-val">Community Validated Consensus</span>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Hazard Matrix & Signaling Index -->
-        <section id="matrix" class="civic-section">
+        <!-- How It Works (3-Step Walkthrough) -->
+        <section id="how-it-works" class="how-it-works-section" style="padding: 68px 24px; max-width: 1280px; margin: 0 auto;">
             <div class="section-head">
-                <div>
-                    <div class="section-tag">Signaling Ledger</div>
-                    <h2 class="section-title">Standardized Signal Codes</h2>
-                </div>
+                <div class="section-tag">Operational Workflow</div>
+                <h2 class="section-title">How Street Safety System Works</h2>
                 <p class="section-lead">
-                    Color and symbology operate exclusively as an intentional signaling protocol rather than decoration.
+                    A seamless cycle connecting civic incident reporting with algorithmic safe wayfinding across municipal networks.
                 </p>
             </div>
 
-            <table class="hazard-matrix-table">
-                <thead>
-                    <tr>
-                        <th>Category</th>
-                        <th>Standard Symbol</th>
-                        <th>Severity Tier</th>
-                        <th>Signal Color</th>
-                        <th>Recommended Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="table-type"><span>🚗</span> Road Accident / Collision</td>
-                        <td>Signal Red Triangle / Vehicle</td>
-                        <td>8 &ndash; 10 (Critical)</td>
-                        <td><span class="board-badge badge-critical">Signal Red (#dc2626)</span></td>
-                        <td>Immediate reroute; emergency services priority</td>
-                    </tr>
-                    <tr>
-                        <td class="table-type"><span>🌊</span> Waterlogging / Flooded Road</td>
-                        <td>Signal Orange Triangle / Wave</td>
-                        <td>6 &ndash; 8 (High)</td>
-                        <td><span class="board-badge badge-warning">Hazard Orange (#ea580c)</span></td>
-                        <td>Avoid low-clearance vehicles; reduce speed</td>
-                    </tr>
-                    <tr>
-                        <td class="table-type"><span>🕳️</span> Pothole / Open Manhole</td>
-                        <td>Caution Amber Triangle / Defect</td>
-                        <td>4 &ndash; 6 (Moderate)</td>
-                        <td><span class="board-badge badge-caution">Caution Amber (#d97706)</span></td>
-                        <td>Maintain lane caution; flag roadwork dept</td>
-                    </tr>
-                    <tr>
-                        <td class="table-type"><span>💡</span> Broken Streetlight / Darkness</td>
-                        <td>Caution Amber Triangle / Light</td>
-                        <td>3 &ndash; 5 (Moderate)</td>
-                        <td><span class="board-badge badge-caution">Caution Amber (#d97706)</span></td>
-                        <td>Pedestrians utilize illuminated arterial routes</td>
-                    </tr>
-                    <tr>
-                        <td class="table-type"><span>🐕</span> Stray Animals / Obstruction</td>
-                        <td>Yellow Triangle / Animal</td>
-                        <td>2 &ndash; 4 (Low-Moderate)</td>
-                        <td><span class="board-badge badge-caution">Warning Yellow (#ca8a04)</span></td>
-                        <td>Exercise caution on foot or two-wheeler</td>
-                    </tr>
-                    <tr>
-                        <td class="table-type"><span>🛡️</span> Verified Safe Corridor</td>
-                        <td>Green Node Indicator</td>
-                        <td>0 &ndash; 1 (Safe)</td>
-                        <td><span class="board-badge badge-safe">Safe Green (#16a34a)</span></td>
-                        <td>Primary recommended pedestrian/vehicular route</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="steps-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">
+                <div class="step-card" style="background: #ffffff; border: 1px solid var(--color-border-grid); border-radius: 12px; padding: 28px 22px; position: relative;">
+                    <div class="step-number" style="font-family: var(--font-mono); font-size: 1.8rem; font-weight: 800; color: #2563eb; margin-bottom: 12px;">01</div>
+                    <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-bottom: 8px;">Report or Detect</h3>
+                    <p style="font-size: 0.9rem; color: #475569; line-height: 1.6;">
+                        Citizens and transit sensors flag road defects, collisions, or infrastructure failures with precise geographic coordinates and hazard classification.
+                    </p>
+                </div>
+
+                <div class="step-card" style="background: #ffffff; border: 1px solid var(--color-border-grid); border-radius: 12px; padding: 28px 22px; position: relative;">
+                    <div class="step-number" style="font-family: var(--font-mono); font-size: 1.8rem; font-weight: 800; color: #2563eb; margin-bottom: 12px;">02</div>
+                    <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-bottom: 8px;">Consensus Verification</h3>
+                    <p style="font-size: 0.9rem; color: #475569; line-height: 1.6;">
+                        Nearby travelers upvote or downvote alerts in real-time, building a tamper-evident reputation score for every street condition.
+                    </p>
+                </div>
+
+                <div class="step-card" style="background: #ffffff; border: 1px solid var(--color-border-grid); border-radius: 12px; padding: 28px 22px; position: relative;">
+                    <div class="step-number" style="font-family: var(--font-mono); font-size: 1.8rem; font-weight: 800; color: #2563eb; margin-bottom: 12px;">03</div>
+                    <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-bottom: 8px;">Safe Navigation</h3>
+                    <p style="font-size: 0.9rem; color: #475569; line-height: 1.6;">
+                        Routing algorithms factor in hazard severity and proximity radii, steering pedestrians and drivers onto safety-optimized paths.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Call to Action Banner -->
+        <section class="cta-section">
+            <div class="cta-box">
+                <div class="cta-content">
+                    <h2>Ready to navigate with verified safety intelligence?</h2>
+                    <p>
+                        Access the interactive map now to evaluate local route conditions, inspect real-time hazards, or report a danger in your transit corridor.
+                    </p>
+                </div>
+                <div class="cta-actions">
+                    <a href="map.html" class="btn-civic btn-civic-accent">Open Live Interactive Map ↗</a>
+                    <a href="login.html" class="btn-civic btn-civic-outline">Sign In to Report Hazard</a>
+                </div>
+            </div>
         </section>
     </main>
 
-    <!-- Civic Wayfinding Footer -->
+    <!-- Civic Footer -->
     <footer class="civic-footer">
         <div class="footer-inner">
             <div class="footer-brand">
                 <h4>Street Safety System</h4>
                 <p>
-                    A public civic initiative for real-time hazard awareness, incident mitigation, and safety-aware navigation across municipal networks.
+                    Civic transit wayfinding and hazard intelligence network. Providing transparent, algorithmic spatial awareness across municipal streets.
                 </p>
             </div>
-
             <div class="footer-col">
                 <h5>Navigation</h5>
                 <ul>
-                    <li><a href="landing.html">System Home</a></li>
-                    <li><a href="map.html">Interactive Map</a></li>
-                    <li><a href="#methodology">Routing Engine</a></li>
-                    <li><a href="#matrix">Hazard Matrix</a></li>
+                    <li><a href="map.html">Live Map</a></li>
+                    <li><a href="#architecture">Architecture</a></li>
+                    <li><a href="#how-it-works">How It Works</a></li>
+                    <li><a href="#live-feed">Signal Feed</a></li>
                 </ul>
             </div>
-
             <div class="footer-col">
                 <h5>Citizen Access</h5>
                 <ul>
-                    <li><a href="login.html">Sign In</a></li>
+                    <li><a href="login.html">Citizen Sign In</a></li>
                     <li><a href="register.html">Register Account</a></li>
-                    <li><a href="map.html">Report Incident</a></li>
+                    <li><a href="map.html?action=report">Report Hazard</a></li>
                 </ul>
             </div>
-
             <div class="footer-col">
-                <h5>Operational</h5>
+                <h5>Architecture</h5>
                 <ul>
-                    <li><a href="#">System Specs</a></li>
-                    <li><a href="#">API Protocol</a></li>
-                    <li><a href="#">Data Privacy</a></li>
+                    <li><a href="map.html">Municipal Transit Grid</a></li>
+                    <li><a href="map.html">3-Objective Routing</a></li>
+                    <li><a href="map.html">Consensus Ledger</a></li>
                 </ul>
             </div>
         </div>
-
         <div class="footer-bottom">
-            <span>&copy; 2026 Street Safety System. Public Civic Safety Infrastructure.</span>
-            <span>COORDINATE DATUM: WGS84 // EPSG:4326</span>
+            <div>&copy; 2026 Street Safety System. Municipal Transit &amp; Safety Network.</div>
+            <div>STATUS: OPERATIONAL • CIVIC SAFETY REGISTRY</div>
         </div>
     </footer>
 
+    <!-- Live Telemetry & Auth Sync Script -->
     <script>
-        (async function() {
-            const container = document.getElementById('liveSignalBody');
-            if (!container) return;
-
-            function escapeHtml(s) {
-                const d = document.createElement('div');
-                d.textContent = s || '';
-                return d.innerHTML;
-            }
-
-            const emojiMap = {
-                "Road Accident": "🚗",
-                "Waterlogging": "🌊",
-                "Pothole": "🕳️",
-                "Broken Streetlight": "💡",
-                "Stray Animals": "🐕",
-                "Dark Area": "🌑",
-                "Suspicious Activity": "⚠️"
+        (function () {
+            const hazardIcons = {
+                'Road Accident': '🚗',
+                'Pothole': '🕳️',
+                'Broken Streetlight': '💡',
+                'Poor Lighting': '🌑',
+                'Stray Dogs': '🐕',
+                'Road Construction': '🚧',
+                'Fallen Tree': '🌳',
+                'Flooded Road': '🌊',
+                'Traffic Signal Failure': '🚦',
+                'Unsafe Crossing': '🚶',
+                'Open Manhole': '🕳️',
+                'Medical Emergency': '🚑',
+                'Fire Hazard': '🔥',
+                'Crime Alert': '🚨',
+                'General Hazard': '⚠️'
             };
 
-            try {
-                const res = await fetch('/api/crimes');
-                if (!res.ok) throw new Error('Network error');
-                const crimes = await res.json();
+            function escapeHtml(str) {
+                if (!str) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
 
-                if (!Array.isArray(crimes) || crimes.length === 0) {
-                    container.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--color-ink-muted); font-size: 0.85rem;">No active hazards registered in database. Use the map to report a community hazard.</div>';
-                    return;
-                }
+            function cleanDescription(text) {
+                if (!text) return 'Municipal Transit Grid';
+                return text
+                    .replace(/^Incident details:\s*/i, '')
+                    .replace(/^Reported Location:\s*/i, '')
+                    .replace(/Detailed location report:/i, '')
+                    .trim();
+            }
 
-                // Show the most recent 4 real reports
-                const recent = crimes.slice(-4).reverse();
-                container.innerHTML = recent.map(c => {
-                    const type = c.type || c.hazardType || 'Hazard';
-                    const icon = emojiMap[type] || '⚠️';
-                    const loc = c.location || c.address || 'Reported Zone';
-                    const sev = Number(c.severity) || 5;
+            function formatTimeAgo(dateString) {
+                if (!dateString) return 'Active';
+                const d = new Date(dateString);
+                if (isNaN(d.getTime())) return 'Active';
+                const diffMs = Date.now() - d.getTime();
+                const diffMins = Math.floor(diffMs / 60000);
+                if (diffMins < 1) return 'Just now';
+                if (diffMins < 60) return `${diffMins}m ago`;
+                const diffHours = Math.floor(diffMins / 60);
+                if (diffHours < 24) return `${diffHours}h ago`;
+                return `${Math.floor(diffHours / 24)}d ago`;
+            }
 
-                    let badgeClass = 'badge-caution';
-                    let badgeText = 'Moderate';
-                    if (sev >= 8) {
-                        badgeClass = 'badge-critical';
-                        badgeText = 'Critical';
-                    } else if (sev >= 6) {
-                        badgeClass = 'badge-warning';
-                        badgeText = 'High';
-                    } else if (sev <= 2) {
-                        badgeClass = 'badge-safe';
-                        badgeText = 'Low';
+            async function loadLiveFeed() {
+                try {
+                    const res = await fetch('/api/crimes');
+                    if (!res.ok) return;
+                    const crimes = await res.json();
+                    const container = document.getElementById('liveSignalBody');
+                    if (!container) return;
+
+                    if (!Array.isArray(crimes) || crimes.length === 0) {
+                        container.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--color-ink-muted); font-size: 0.85rem; font-family: var(--font-mono);">No active incidents currently reported in your area.</div>';
+                        return;
                     }
 
-                    return `
-                        <div class="board-item">
-                            <div class="board-icon-box">${icon}</div>
-                            <div class="board-info">
-                                <h4>${escapeHtml(type)}</h4>
-                                <p>${escapeHtml(loc)} • Severity ${sev}/10</p>
+                    // Display top 5 active/recent hazards
+                    const topCrimes = crimes.slice(0, 5);
+                    const feedHtml = topCrimes.map(c => {
+                        const type = c.hazardType || c.type || 'Hazard';
+                        const icon = hazardIcons[type] || '⚠️';
+                        const loc = cleanDescription(c.location || c.address || c.description);
+                        const sev = Number(c.severity) || 5;
+                        const isUser = c.isUserReported === true;
+                        const reporterName = c.reportedByName || (c.reportedBy ? c.reportedBy.split('@')[0] : 'Citizen');
+                        const timeText = formatTimeAgo(c.createdAt || c.timestamp);
+
+                        let badgeClass = 'badge-caution';
+                        let badgeText = 'Moderate';
+                        if (sev >= 8) {
+                            badgeClass = 'badge-critical';
+                            badgeText = 'Critical';
+                        } else if (sev >= 6) {
+                            badgeClass = 'badge-warning';
+                            badgeText = 'High';
+                        } else if (sev <= 2) {
+                            badgeClass = 'badge-safe';
+                            badgeText = 'Low Risk';
+                        }
+
+                        const reporterHtml = isUser
+                            ? `<div class="board-reporter-line">👤 Reported by <strong>${escapeHtml(reporterName)}</strong> <span class="board-time">· ${timeText}</span></div>`
+                            : `<div style="font-size: 0.7rem; color: #94a3b8; margin-top: 2px;">Municipal sensor baseline</div>`;
+
+                        return `
+                            <div class="board-item ${isUser ? 'board-item-user' : ''}">
+                                <div class="board-icon-box">${icon}</div>
+                                <div class="board-info">
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <h4>${escapeHtml(type)}</h4>
+                                        ${isUser ? '<span style="font-family: var(--font-mono); font-size: 0.62rem; color: #16a34a; background: #dcfce7; padding: 1px 5px; border-radius: 2px; font-weight: 700;">USER</span>' : ''}
+                                    </div>
+                                    <p>${escapeHtml(loc)} • Severity ${sev}/10</p>
+                                    ${reporterHtml}
+                                </div>
+                                <span class="board-badge ${badgeClass}">${badgeText}</span>
                             </div>
-                            <span class="board-badge ${badgeClass}">${badgeText}</span>
-                        </div>
-                    `;
-                }).join('');
-            } catch (err) {
-                container.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--color-ink-muted); font-size: 0.85rem;">Connect to interactive map to review live incidents.</div>';
+                        `;
+                    }).join('');
+
+                    container.innerHTML = feedHtml;
+                } catch (err) {
+                    console.warn('Error refreshing live feed:', err);
+                }
             }
+
+            // Initial load and periodic polling
+            loadLiveFeed();
+            setInterval(loadLiveFeed, 5000);
+            window.addEventListener('focus', loadLiveFeed);
+
+            // Sync navigation actions with active citizen authentication state
+            function syncAuthUI() {
+                const authEmail = localStorage.getItem('authUserEmail');
+                const authName = localStorage.getItem('authDisplayName');
+                const navActions = document.getElementById('navActions');
+                const heroReportBtn = document.getElementById('heroReportBtn');
+
+                if (authEmail && navActions) {
+                    const label = authName && authName !== authEmail ? authName : authEmail.split('@')[0];
+                    navActions.innerHTML = `
+                        <span style="font-family: var(--font-mono); font-size: 0.75rem; color: #38bdf8; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); padding: 6px 12px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+                            <span>●</span> ${escapeHtml(label)}
+                        </span>
+                        <a href="map.html" class="btn-civic btn-civic-accent">Live Map ↗</a>
+                    `;
+                }
+
+                if (heroReportBtn) {
+                    if (authEmail) {
+                        heroReportBtn.href = 'map.html?action=report';
+                        heroReportBtn.textContent = 'Report Road Hazard';
+                    } else {
+                        heroReportBtn.href = 'login.html?message=' + encodeURIComponent('Please sign in to report a road hazard');
+                    }
+                }
+            }
+            syncAuthUI();
         })();
     </script>
 </body>

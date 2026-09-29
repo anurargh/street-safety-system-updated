@@ -1,0 +1,74 @@
+{
+  "entities": {
+    "users": {
+      "title": "UserProfile",
+      "description": "User profile for registered citizens",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Unique identifier of the user matching auth.uid",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user",
+          "minLength": 3,
+          "maxLength": 254
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name or username of the citizen",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Optional avatar URL for the user",
+          "maxLength": 500
+        },
+        "providerId": {
+          "type": "string",
+          "description": "Auth provider identifier (e.g. google.com or password)",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user account was created",
+          "maxLength": 50
+        },
+        "lastLoginAt": {
+          "type": "string",
+          "description": "Timestamp when the user last signed in",
+          "maxLength": 50
+        }
+      },
+      "required": ["uid", "email", "displayName", "providerId"]
+    },
+    "test": {
+      "title": "ConnectionTest",
+      "description": "Health check document to verify database connection",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Status string of the test document",
+          "maxLength": 50
+        }
+      },
+      "required": ["status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "users",
+      "description": "Private citizen profile document keyed by user authentication UID"
+    },
+    "/test/{testId}": {
+      "schema": "test",
+      "description": "Ephemeral collection used for validating database connectivity"
+    }
+  }
+}
