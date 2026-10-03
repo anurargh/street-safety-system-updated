@@ -156,9 +156,14 @@
                     }, 800);
                 } catch (err) {
                     console.error('Google registration error:', err);
-                    registerError.textContent = err.code === 'auth/popup-closed-by-user' 
-                        ? 'Registration cancelled. Click "Register with Google Account" to try again.' 
-                        : (err.message || 'Google registration failed.');
+                    if (err.code === 'auth/unauthorized-domain') {
+                        const currentHost = window.location.hostname;
+                        registerError.innerHTML = `<strong>Domain Not Authorized in Firebase</strong><br>The current domain (<code>${currentHost}</code>) must be whitelisted in Firebase Authentication.<br><br><strong>Fix:</strong> Go to <a href="https://console.firebase.google.com/project/crafty-text-n9brs/authentication/settings" target="_blank" style="color: #0052cc; text-decoration: underline; font-weight: 700;">Firebase Console &gt; Authentication &gt; Settings &gt; Authorized domains</a> and click <strong>Add domain</strong> &rarr; enter <code>${currentHost}</code>.<br><br><em>Tip: You can also register right now using your Citizen Email and Password below!</em>`;
+                    } else if (err.code === 'auth/popup-closed-by-user') {
+                        registerError.textContent = 'Registration cancelled. Click "Register with Google Account" to try again.';
+                    } else {
+                        registerError.textContent = err.message || 'Google registration failed.';
+                    }
                     registerError.style.display = 'block';
                     googleRegisterBtn.disabled = false;
                 }

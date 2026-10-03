@@ -152,9 +152,14 @@
                     window.location.href = 'map.html';
                 } catch (err) {
                     console.error('Google Sign-In Error:', err);
-                    loginError.textContent = err.code === 'auth/popup-closed-by-user' 
-                        ? 'Sign-in cancelled. Please click "Sign in with Google Account" to try again.' 
-                        : (err.message || 'Google authentication failed.');
+                    if (err.code === 'auth/unauthorized-domain') {
+                        const currentHost = window.location.hostname;
+                        loginError.innerHTML = `<strong>Domain Not Authorized in Firebase</strong><br>The current domain (<code>${currentHost}</code>) must be whitelisted in Firebase Authentication.<br><br><strong>Fix:</strong> Go to <a href="https://console.firebase.google.com/project/crafty-text-n9brs/authentication/settings" target="_blank" style="color: #0052cc; text-decoration: underline; font-weight: 700;">Firebase Console &gt; Authentication &gt; Settings &gt; Authorized domains</a> and click <strong>Add domain</strong> &rarr; enter <code>${currentHost}</code>.<br><br><em>Tip: You can also sign in right now using your Citizen Email and Password below!</em>`;
+                    } else if (err.code === 'auth/popup-closed-by-user') {
+                        loginError.textContent = 'Sign-in cancelled. Please click "Sign in with Google Account" to try again.';
+                    } else {
+                        loginError.textContent = err.message || 'Google authentication failed.';
+                    }
                     loginError.style.display = 'block';
                     googleSignInBtn.disabled = false;
                 }
